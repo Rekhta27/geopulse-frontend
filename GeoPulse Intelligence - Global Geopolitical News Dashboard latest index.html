@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<!-- saved from url=(0152)https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoPulse Intelligence - Global Geopolitical News Dashboard</title>
+    <link rel="stylesheet" href="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/style.css">
+    <link rel="stylesheet" href="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/leaflet.css">
+    <script src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/leaflet.js.download"></script>
+    <script src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/chart.js.download"></script>
+</head>
+<body class="">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <circle cx="16" cy="16" r="14" stroke="#2196F3" stroke-width="2" fill="none"></circle>
+                    <path d="M16 8 L16 16 L22 16" stroke="#FF6B35" stroke-width="2" stroke-linecap="round"></path>
+                    <circle cx="16" cy="16" r="2" fill="#2196F3"></circle>
+                </svg>
+                <span class="logo-text">GeoPulse Intelligence</span>
+            </div>
+            <nav class="nav">
+                <a href="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html#" class="nav-link active" data-view="global">Global News</a>
+                <a href="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html#" class="nav-link" data-view="india">India Focus</a>
+                <a href="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html#" class="nav-link" data-view="conflicts">Conflict Monitor</a>
+                <a href="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html#" class="nav-link" data-view="sentiment">Sentiment Analysis</a>
+                <a href="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html#" class="nav-link" data-view="predictions">Predictions</a>
+            </nav>
+            <div class="header-actions">
+                <div class="search-container">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search topics, countries...">
+                </div>
+                <button class="icon-btn" id="refreshBtn" title="Refresh Data">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="settingsBtn" title="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.2 4.2l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.2-4.2l4.2-4.2"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Left Sidebar (Filters) -->
+        <aside class="sidebar sidebar-left" id="filterSidebar">
+            <div class="sidebar-header">
+                <h3>Filters</h3>
+                <button class="btn-text" id="clearFilters">Clear All</button>
+            </div>
+            <div class="filter-section">
+                <h4>Region</h4>
+                <div class="filter-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="South Asia" class="region-filter">
+                        <span>South Asia</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Middle East" class="region-filter">
+                        <span>Middle East</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="East Asia" class="region-filter">
+                        <span>East Asia</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Europe" class="region-filter">
+                        <span>Europe</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Africa" class="region-filter">
+                        <span>Africa</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Americas" class="region-filter">
+                        <span>Americas</span>
+                    </label>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h4>Time Range</h4>
+                <select id="timeRange" class="filter-select">
+                    <option value="24h">Last 24 hours</option>
+                    <option value="7d" selected="">Last 7 days</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="3m">Last 3 months</option>
+                </select>
+            </div>
+            <div class="filter-section">
+                <h4>Sentiment</h4>
+                <div class="filter-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Positive" class="sentiment-filter">
+                        <span>Positive</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Neutral" class="sentiment-filter">
+                        <span>Neutral</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Negative" class="sentiment-filter">
+                        <span>Negative</span>
+                    </label>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h4>Conflict Intensity</h4>
+                <div class="filter-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Low" class="intensity-filter">
+                        <span>Low</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Medium" class="intensity-filter">
+                        <span>Medium</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="High" class="intensity-filter">
+                        <span>High</span>
+                    </label>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h4>India Impact</h4>
+                <div class="filter-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="High" class="impact-filter">
+                        <span>High</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Medium" class="impact-filter">
+                        <span>Medium</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="Low" class="impact-filter">
+                        <span>Low</span>
+                    </label>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Global News View -->
+            <div id="globalView" class="view active">
+                <!-- Key Metrics -->
+                <div style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(244, 67, 54, 0.15)); border: 2px solid var(--color-accent); border-radius: var(--radius-lg); padding: var(--space-lg); margin-bottom: var(--space-md);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md);">
+      <h3 style="margin: 0; color: var(--color-accent);">⚠ High-Priority Sensitive Events</h3>
+      <span style="font-size: 12px; color: var(--color-text-secondary);">Requires Historical Analysis</span>
+    </div>
+    <div style="display: grid; gap: var(--space-sm);">
+      
+        <div style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); transform: translateX(0px);" onclick="showHistoricalContext({&quot;id&quot;:4,&quot;title&quot;:&quot;US and India Strengthen Defense Cooperation Through New Tech-Sharing Deal&quot;,&quot;source&quot;:&quot;Reuters&quot;,&quot;url&quot;:&quot;https://reuters.com/article4&quot;,&quot;timestamp&quot;:&quot;2025-10-26T05:20:00Z&quot;,&quot;country&quot;:&quot;India&quot;,&quot;region&quot;:&quot;South Asia&quot;,&quot;sentiment_score&quot;:0.8,&quot;sentiment_label&quot;:&quot;Positive&quot;,&quot;conflict_intensity&quot;:&quot;Low&quot;,&quot;india_impact&quot;:&quot;High&quot;,&quot;india_impact_score&quot;:90,&quot;language&quot;:&quot;English&quot;,&quot;tags&quot;:[&quot;Defense&quot;,&quot;Strategic Partnership&quot;,&quot;Technology Transfer&quot;],&quot;excerpt&quot;:&quot;The United States and India signed a landmark agreement to share advanced defense technologies, further solidifying the Quad alliance.&quot;,&quot;event_type&quot;:&quot;Diplomatic Agreement&quot;,&quot;latitude&quot;:28.6139,&quot;longitude&quot;:77.209,&quot;theories&quot;:[&quot;liberalism&quot;,&quot;postcolonialism&quot;]})" onmouseover="this.style.transform=&#39;translateX(4px)&#39;" onmouseout="this.style.transform=&#39;translateX(0)&#39;">
+          <div style="font-weight: 600; margin-bottom: 4px;">US and India Strengthen Defense Cooperation Through New Tech-Sharing Deal</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); display: flex; gap: 12px;">
+            <span>Impact: 90/100</span>
+            <span>•</span>
+            <span>Intensity: Low</span>
+            <span>•</span>
+            <span>11 hours ago</span>
+          </div>
+        </div>
+      
+        <div style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); transform: translateX(0px);" onclick="showHistoricalContext({&quot;id&quot;:1,&quot;title&quot;:&quot;India and China Hold 21st Round of Corps Commander-Level Talks on LAC&quot;,&quot;source&quot;:&quot;Times of India&quot;,&quot;url&quot;:&quot;https://timesofindia.com/article1&quot;,&quot;timestamp&quot;:&quot;2025-10-26T10:30:00Z&quot;,&quot;country&quot;:&quot;India&quot;,&quot;region&quot;:&quot;South Asia&quot;,&quot;sentiment_score&quot;:0.2,&quot;sentiment_label&quot;:&quot;Neutral&quot;,&quot;conflict_intensity&quot;:&quot;Medium&quot;,&quot;india_impact&quot;:&quot;High&quot;,&quot;india_impact_score&quot;:85,&quot;language&quot;:&quot;English&quot;,&quot;tags&quot;:[&quot;Border Dispute&quot;,&quot;LAC&quot;,&quot;Military&quot;,&quot;Diplomacy&quot;],&quot;excerpt&quot;:&quot;Indian and Chinese military commanders held the 21st round of talks to resolve the standoff along the Line of Actual Control in eastern Ladakh.&quot;,&quot;event_type&quot;:&quot;Diplomatic Meeting&quot;,&quot;latitude&quot;:34.1526,&quot;longitude&quot;:77.577,&quot;theories&quot;:[&quot;realism&quot;,&quot;liberalism&quot;,&quot;postcolonialism&quot;]})" onmouseover="this.style.transform=&#39;translateX(4px)&#39;" onmouseout="this.style.transform=&#39;translateX(0)&#39;">
+          <div style="font-weight: 600; margin-bottom: 4px;">India and China Hold 21st Round of Corps Commander-Level Talks on LAC</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); display: flex; gap: 12px;">
+            <span>Impact: 85/100</span>
+            <span>•</span>
+            <span>Intensity: Medium</span>
+            <span>•</span>
+            <span>5 hours ago</span>
+          </div>
+        </div>
+      
+        <div style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); transform: translateX(0px);" onclick="showHistoricalContext({&quot;id&quot;:15,&quot;title&quot;:&quot;Kashmir Valley Reports Cross-Border Ceasefire Violations&quot;,&quot;source&quot;:&quot;Kashmir Times&quot;,&quot;url&quot;:&quot;https://kashmirtimes.com/article15&quot;,&quot;timestamp&quot;:&quot;2025-10-24T06:20:00Z&quot;,&quot;country&quot;:&quot;India&quot;,&quot;region&quot;:&quot;South Asia&quot;,&quot;sentiment_score&quot;:-0.7,&quot;sentiment_label&quot;:&quot;Negative&quot;,&quot;conflict_intensity&quot;:&quot;Medium&quot;,&quot;india_impact&quot;:&quot;High&quot;,&quot;india_impact_score&quot;:85,&quot;language&quot;:&quot;English&quot;,&quot;tags&quot;:[&quot;Kashmir&quot;,&quot;Cross-Border&quot;,&quot;Military&quot;],&quot;excerpt&quot;:&quot;Indian forces reported multiple ceasefire violations along the Line of Control in Kashmir, with exchanges of fire resulting in no casualties.&quot;,&quot;event_type&quot;:&quot;Border Incident&quot;,&quot;latitude&quot;:34.0837,&quot;longitude&quot;:74.7973,&quot;theories&quot;:[&quot;realism&quot;,&quot;postcolonialism&quot;]})" onmouseover="this.style.transform=&#39;translateX(4px)&#39;" onmouseout="this.style.transform=&#39;translateX(0)&#39;">
+          <div style="font-weight: 600; margin-bottom: 4px;">Kashmir Valley Reports Cross-Border Ceasefire Violations</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); display: flex; gap: 12px;">
+            <span>Impact: 85/100</span>
+            <span>•</span>
+            <span>Intensity: Medium</span>
+            <span>•</span>
+            <span>2 days ago</span>
+          </div>
+        </div>
+      
+    </div>
+  </div><section class="metrics-section">
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalEvents">30</div>
+                        <div class="metric-label">Events (24h)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="conflictZones">11</div>
+                        <div class="metric-label">Active Conflict Zones</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="globalSentiment">0.03</div>
+                        <div class="metric-label">Global Sentiment</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="indiaEvents">9</div>
+                        <div class="metric-label">India-Relevant Events</div>
+                    </div>
+                </section>
+
+                <!-- Interactive Map -->
+                <section class="map-section">
+                    <div class="section-header">
+                        <h2>Global Conflict Map</h2>
+                        <div class="map-legend">
+                            <span class="legend-item"><span class="legend-dot high"></span> High Intensity</span>
+                            <span class="legend-item"><span class="legend-dot medium"></span> Medium Intensity</span>
+                            <span class="legend-item"><span class="legend-dot low"></span> Low Intensity</span>
+                        </div>
+                    </div>
+                    <div id="map" class="map-container leaflet-container leaflet-touch leaflet-fade-anim leaflet-grab leaflet-touch-drag leaflet-touch-zoom" style="position: relative;" tabindex="0">
+                        <div class="map-controls">
+                            <div class="map-control-item">
+                                <input type="checkbox" id="showHistoricalHeatmap" onchange="toggleHistoricalHeatmap()" style="">
+                                <label for="showHistoricalHeatmap">Historical Heatmap (1979-2025)</label>
+                            </div>
+                            <div class="map-control-item">
+                                <input type="checkbox" id="showTimelineLayers" onchange="toggleTimelineLayers()" style="">
+                                <label for="showTimelineLayers">Timeline Layers</label>
+                            </div>
+                            <div class="map-control-item">
+                                <input type="checkbox" id="showEventClusters" checked="" onchange="toggleEventClusters()">
+                                <label for="showEventClusters">Event Clusters</label>
+                            </div>
+                        </div>
+                    <div class="leaflet-pane leaflet-map-pane" style="transform: translate3d(-20px, 379px, 0px);"><div class="leaflet-pane leaflet-tile-pane"><div class="leaflet-layer " style="z-index: 1; opacity: 1;"><div class="leaflet-tile-container leaflet-zoom-animated" style="z-index: 17; transform: translate3d(440px, -35px, 0px) scale(0.5);"></div><div class="leaflet-tile-container leaflet-zoom-animated" style="z-index: 18; transform: translate3d(294px, -22px, 0px) scale(1);"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/0.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(165px, -392px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/1.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(165px, -136px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/0(1).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(-91px, -392px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/0(2).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(421px, -392px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/1(1).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(-91px, -136px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/1(2).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(421px, -136px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/2.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(165px, 120px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/2(1).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(-91px, 120px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/2(2).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(421px, 120px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/1(3).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(-347px, -136px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/1(3).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(677px, -136px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/0(3).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(-347px, -392px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/0(3).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(677px, -392px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/2(3).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(-347px, 120px, 0px); opacity: 1;"><img alt="" src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/2(3).png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(677px, 120px, 0px); opacity: 1;"></div></div></div><div class="leaflet-pane leaflet-overlay-pane"><svg pointer-events="none" class="leaflet-zoom-animated" width="1379" height="596" viewBox="-95 -429 1379 596" style="transform: translate3d(-95px, -429px, 0px);"><g><path class="leaflet-interactive" stroke="#fff" stroke-opacity="1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#FFC107" fill-opacity="0.8" fill-rule="evenodd" d="M670,-5a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#F44336" fill-opacity="0.8" fill-rule="evenodd" d="M547,4a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#F44336" fill-opacity="0.8" fill-rule="evenodd" d="M795,24a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#F44336" fill-opacity="0.8" fill-rule="evenodd" d="M557,-58a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#FFC107" fill-opacity="0.8" fill-rule="evenodd" d="M662,-5a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#F44336" fill-opacity="0.8" fill-rule="evenodd" d="M716,38a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#FFC107" fill-opacity="0.8" fill-rule="evenodd" d="M595,-11a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#FFC107" fill-opacity="0.8" fill-rule="evenodd" d="M775,61a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 "></path><path class="leaflet-interactive" stroke="#FF6B35" stroke-opacity="0.3" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#FF6B35" fill-opacity="0.13999999999999999" fill-rule="evenodd" d="M657.3777777777777,-4.981032675484471a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 " aria-describedby="leaflet-tooltip-130"></path><path class="leaflet-interactive" stroke="#FF6B35" stroke-opacity="0.3" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#FF6B35" fill-opacity="0.18000000000000002" fill-rule="evenodd" d="M580.2933333333333,-2.58785019241202a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 " aria-describedby="leaflet-tooltip-275"></path><path class="leaflet-interactive" stroke="#FF6B35" stroke-opacity="0.3" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#FF6B35" fill-opacity="0.12" fill-rule="evenodd" d="M489.55555555555554,-37.78954763744969a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 "></path><path class="leaflet-interactive" stroke="#FF6B35" stroke-opacity="0.3" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#FF6B35" fill-opacity="0.16000000000000003" fill-rule="evenodd" d="M580.7244444444444,53.94054962564729a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 "></path><path class="leaflet-interactive" stroke="#FF6B35" stroke-opacity="0.3" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#FF6B35" fill-opacity="0.13999999999999999" fill-rule="evenodd" d="M684.5466666666666,75.45101873120763a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 "></path><path class="leaflet-interactive" stroke="#FF6B35" stroke-opacity="0.3" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#FF6B35" fill-opacity="0.19" fill-rule="evenodd" d="M552.1333333333333,3.47963220929455a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 " aria-describedby="leaflet-tooltip-734"></path><path class="leaflet-interactive" stroke="#FF6B35" stroke-opacity="0.3" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#FF6B35" fill-opacity="0.17" fill-rule="evenodd" d="M559.8133333333333,-12.634881944021117a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 " aria-describedby="leaflet-tooltip-276"></path><path class="leaflet-interactive" stroke="#FF6B35" stroke-opacity="0.3" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#FF6B35" fill-opacity="0.12" fill-rule="evenodd" d="M570.1999999999999,71.99871094345696a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="0.8" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#F44336" fill-opacity="0.6" fill-rule="evenodd" d="M674,-5a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="0.8" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#F44336" fill-opacity="0.6" fill-rule="evenodd" d="M666,-5a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="0.8" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#FFC107" fill-opacity="0.6" fill-rule="evenodd" d="M675,18a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="0.8" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#4CAF50" fill-opacity="0.6" fill-rule="evenodd" d="M586,25a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 "></path><path class="leaflet-interactive" stroke="#fff" stroke-opacity="0.8" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="#4CAF50" fill-opacity="0.6" fill-rule="evenodd" d="M556,-3a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 "></path></g></svg></div><div class="leaflet-pane leaflet-shadow-pane"></div><div class="leaflet-pane leaflet-marker-pane"></div><div class="leaflet-pane leaflet-tooltip-pane"></div><div class="leaflet-pane leaflet-popup-pane"></div><div class="leaflet-proxy leaflet-zoom-animated" style="transform: translate3d(647.5px, 283.5px, 0px) scale(2);"></div></div><div class="leaflet-control-container"><div class="leaflet-top leaflet-left"><div class="leaflet-control-zoom leaflet-bar leaflet-control"><a class="leaflet-control-zoom-in" href="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html#" title="Zoom in" role="button" aria-label="Zoom in" aria-disabled="false"><span aria-hidden="true">+</span></a><a class="leaflet-control-zoom-out leaflet-disabled" href="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html#" title="Zoom out" role="button" aria-label="Zoom out" aria-disabled="true"><span aria-hidden="true">−</span></a></div></div><div class="leaflet-top leaflet-right"></div><div class="leaflet-bottom leaflet-left"></div><div class="leaflet-bottom leaflet-right"><div class="leaflet-control-attribution leaflet-control"><a href="https://leafletjs.com/" title="A JavaScript library for interactive maps"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8" class="leaflet-attribution-flag"><path fill="#4C7BE1" d="M0 0h12v4H0z"></path><path fill="#FFD500" d="M0 4h12v3H0z"></path><path fill="#E0BC00" d="M0 7h12v1H0z"></path></svg> Leaflet</a> <span aria-hidden="true">|</span> © OpenStreetMap contributors</div></div></div></div>
+                </section>
+
+                <!-- News Grid -->
+                <section class="news-section">
+                    <div class="section-header">
+                        <h2>Latest News</h2>
+                        <div class="view-toggle">
+                            <button class="toggle-btn" data-layout="grid">Grid</button>
+                            <button class="toggle-btn active" data-layout="list">List</button>
+                        </div>
+                    </div>
+                    <div id="newsGrid" class="news-grid list-layout"><p style="grid-column: 1/-1; text-align: center; color: var(--color-text-secondary);">No articles match your filters</p></div>
+                </section>
+            </div>
+
+            <!-- India Focus View -->
+            <div id="indiaView" class="view">
+                <section class="india-header">
+                    <h1>India Geopolitical Impact Analysis</h1>
+                    <div class="india-score">
+                        <div class="score-circle">
+                            <svg width="120" height="120">
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#1f2937" stroke-width="10"></circle>
+                                <circle id="scoreCircle" cx="60" cy="60" r="50" fill="none" stroke="#2196F3" stroke-width="10" stroke-dasharray="314" stroke-dashoffset="157" transform="rotate(-90 60 60)" style="stroke-dashoffset: 130.9;"></circle>
+                            </svg>
+                            <div class="score-value" id="indiaHealthScore">58</div>
+                        </div>
+                        <div class="score-label">Geopolitical Health Score</div>
+                    </div>
+                </section>
+
+                <section class="india-categories">
+                    <div class="category-card" data-category="border_security">
+                        <h3>Border Security</h3>
+                        <div class="threat-level medium" id="threat-border_security">Medium</div>
+                        <div class="category-stats">
+                            <span class="stat"><strong id="count-border_security">8</strong> events</span>
+                            <span class="trend" id="trend-border_security">→</span>
+                        </div>
+                        <div class="category-details">China LAC, Pakistan LoC, Bangladesh</div>
+                    </div>
+                    <div class="category-card" data-category="trade_economy">
+                        <h3>Trade &amp; Economy</h3>
+                        <div class="threat-level low" id="threat-trade_economy">Low</div>
+                        <div class="category-stats">
+                            <span class="stat"><strong id="count-trade_economy">3</strong> events</span>
+                            <span class="trend" id="trend-trade_economy">↓</span>
+                        </div>
+                        <div class="category-details">Oil imports, Trade routes, REE supply</div>
+                    </div>
+                    <div class="category-card" data-category="regional_stability">
+                        <h3>Regional Stability</h3>
+                        <div class="threat-level medium" id="threat-regional_stability">Medium</div>
+                        <div class="category-stats">
+                            <span class="stat"><strong id="count-regional_stability">12</strong> events</span>
+                            <span class="trend" id="trend-regional_stability">↑</span>
+                        </div>
+                        <div class="category-details">Afghanistan, Sri Lanka, Myanmar</div>
+                    </div>
+                    <div class="category-card" data-category="strategic_partnerships">
+                        <h3>Strategic Partnerships</h3>
+                        <div class="threat-level low" id="threat-strategic_partnerships">Low</div>
+                        <div class="category-stats">
+                            <span class="stat"><strong id="count-strategic_partnerships">5</strong> events</span>
+                            <span class="trend" id="trend-strategic_partnerships">→</span>
+                        </div>
+                        <div class="category-details">Quad, BRICS, SCO</div>
+                    </div>
+                    <div class="category-card" data-category="energy_security">
+                        <h3>Energy Security</h3>
+                        <div class="threat-level medium" id="threat-energy_security">Medium</div>
+                        <div class="category-stats">
+                            <span class="stat"><strong id="count-energy_security">6</strong> events</span>
+                            <span class="trend" id="trend-energy_security">↑</span>
+                        </div>
+                        <div class="category-details">Middle East oil, Energy corridors</div>
+                    </div>
+                    <div class="category-card" data-category="diaspora_affairs">
+                        <h3>Diaspora Affairs</h3>
+                        <div class="threat-level low" id="threat-diaspora_affairs">Low</div>
+                        <div class="category-stats">
+                            <span class="stat"><strong id="count-diaspora_affairs">2</strong> events</span>
+                            <span class="trend" id="trend-diaspora_affairs">→</span>
+                        </div>
+                        <div class="category-details">Global Indian community issues</div>
+                    </div>
+                </section>
+
+                <section class="news-section">
+                    <h2>India-Relevant News</h2>
+                    <div id="indiaNewsGrid" class="news-grid"></div>
+                </section>
+            </div>
+
+            <!-- Conflict Monitor View -->
+            <div id="conflictsView" class="view">
+                <h1>Conflict Prediction Dashboard</h1>
+                <div class="prediction-intro">
+                    <p>AI-powered conflict probability analysis based on historical patterns, sentiment trends, and geopolitical indicators.</p>
+                </div>
+                <section class="predictions-section">
+                    <div id="predictionsTable">
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>Taiwan Strait</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">Taiwan</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">52%</div>
+        <div class="probability-label">30-day risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: 72%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: 72%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          <li>Military exercises</li><li>Political rhetoric</li><li>Economic tensions</li>
+        </ul>
+      </div>
+    </div>
+  
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>Kashmir Region</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">India</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">45%</div>
+        <div class="probability-label">30-day risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: 68%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: 68%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          <li>Cross-border incidents</li><li>Militant activity</li><li>Political statements</li>
+        </ul>
+      </div>
+    </div>
+  
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>Gaza Strip</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">Palestine</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">78%</div>
+        <div class="probability-label">30-day risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: 85%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: 85%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          <li>Ongoing hostilities</li><li>Civilian casualties</li><li>Failed negotiations</li>
+        </ul>
+      </div>
+    </div>
+  
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>Eastern Ukraine</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">Ukraine</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">68%</div>
+        <div class="probability-label">30-day risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: 80%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: 80%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          <li>Active combat</li><li>Territory disputes</li><li>International support</li>
+        </ul>
+      </div>
+    </div>
+  
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>Korean Peninsula</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">North Korea</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">42%</div>
+        <div class="probability-label">30-day risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: 65%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: 65%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          <li>Missile tests</li><li>Military posturing</li><li>Sanctions pressure</li>
+        </ul>
+      </div>
+    </div>
+  
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>Myanmar Border Regions</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">Myanmar</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">60%</div>
+        <div class="probability-label">30-day risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: 70%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: 70%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          <li>Ethnic conflicts</li><li>Military junta</li><li>Refugee crisis</li>
+        </ul>
+      </div>
+    </div>
+  
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>Iran Nuclear Sites</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">Iran</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">38%</div>
+        <div class="probability-label">30-day risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: 60%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: 60%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          <li>Nuclear program</li><li>Sanctions</li><li>Regional tensions</li>
+        </ul>
+      </div>
+    </div>
+  
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>South China Sea</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">Multiple</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">46%</div>
+        <div class="probability-label">30-day risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: 68%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: 68%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          <li>Territorial disputes</li><li>Naval presence</li><li>Resource competition</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+                </section>
+            </div>
+
+            <!-- Sentiment Analysis View -->
+            <div id="sentimentView" class="view">
+                <h1>Sentiment Analysis Timeline</h1>
+                <section class="chart-section">
+                    <div class="chart-container">
+                        <canvas id="sentimentChart" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas>
+                    </div>
+                </section>
+                <section class="sentiment-distribution">
+                    <h2>Current Sentiment Distribution</h2>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="sentimentDistribution" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Predictions View -->
+            <div id="predictionsView" class="view">
+                <h1>Regional Risk Assessment</h1>
+                <section class="risk-timeline">
+                    <div class="timeline-controls">
+                        <button class="btn-toggle active" data-period="7d">7 Days</button>
+                        <button class="btn-toggle" data-period="30d">30 Days</button>
+                        <button class="btn-toggle" data-period="90d">90 Days</button>
+                    </div>
+                    <div id="riskTable" class="risk-table"></div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Right Sidebar (Live Feed) -->
+        <aside class="sidebar sidebar-right" id="liveFeed">
+            <div class="sidebar-header">
+                <h3>Live Event Stream</h3>
+                <span class="update-timer" id="updateTimer">Next update: 12:16</span>
+            </div>
+            <div id="liveEvents" class="live-events">
+    <div class="live-event">
+      <div class="live-event-type">Military Action</div>
+      <div class="live-event-title">Chinese PLA conducts drills near Taiwan</div>
+      <div class="live-event-time">12 mins ago</div>
+    </div>
+  
+    <div class="live-event">
+      <div class="live-event-type">Diplomatic</div>
+      <div class="live-event-title">India-US joint statement on trade</div>
+      <div class="live-event-time">28 mins ago</div>
+    </div>
+  
+    <div class="live-event">
+      <div class="live-event-type">Economic</div>
+      <div class="live-event-title">Oil prices surge on Middle East tensions</div>
+      <div class="live-event-time">45 mins ago</div>
+    </div>
+  
+    <div class="live-event">
+      <div class="live-event-type">Border Incident</div>
+      <div class="live-event-title">Pakistan shells Indian positions in Kashmir</div>
+      <div class="live-event-time">1 hour ago</div>
+    </div>
+  
+    <div class="live-event">
+      <div class="live-event-type">Political</div>
+      <div class="live-event-title">Myanmar junta extends emergency rule</div>
+      <div class="live-event-time">2 hours ago</div>
+    </div>
+  
+    <div class="live-event">
+      <div class="live-event-type">Military Exercise</div>
+      <div class="live-event-title">US-Japan naval drills in Philippine Sea</div>
+      <div class="live-event-time">3 hours ago</div>
+    </div>
+  
+    <div class="live-event">
+      <div class="live-event-type">Peace Talks</div>
+      <div class="live-event-title">Yemen ceasefire negotiations continue</div>
+      <div class="live-event-time">4 hours ago</div>
+    </div>
+  
+    <div class="live-event">
+      <div class="live-event-type">Sanctions</div>
+      <div class="live-event-title">EU imposes new sanctions on Belarus</div>
+      <div class="live-event-time">5 hours ago</div>
+    </div>
+  </div>
+        </aside>
+    </div>
+
+    <!-- Historical Context Modal -->
+    <div id="historicalModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Historical Context Analysis</h2>
+                <button class="modal-close" onclick="closeHistoricalModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="currentEventSummary" class="context-summary">
+    <h3>India and China Hold 21st Round of Corps Commander-Level Talks on LAC</h3>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
+      <div>
+        <strong>Region:</strong> South Asia<br>
+        <strong>Country:</strong> India
+      </div>
+      <div>
+        <strong>Conflict Intensity:</strong> Medium<br>
+        <strong>India Impact:</strong> 85/100
+      </div>
+      <div>
+        <strong>Sentiment:</strong> Neutral<br>
+        <strong>Date:</strong> 10/26/2025
+      </div>
+    </div>
+  </div>
+                <div class="section-divider"></div>
+                <h3>Similar Historical Incidents</h3>
+                <div id="historicalMatches" class="historical-matches">
+      <div class="historical-match-card">
+        <div class="match-header">
+          <div>
+            <h4 style="margin-bottom: 8px;">2017 Doklam Standoff - India-China Border Dispute</h4>
+            <div style="font-size: 12px; color: var(--color-text-secondary);">2017-06-16</div>
+          </div>
+          <div class="similarity-badge">85% Match</div>
+        </div>
+        <div style="margin: 12px 0; padding: 12px; background: var(--color-surface); border-radius: 6px;">
+          <strong>Why this matches:</strong> Same region, Same country involved, Similar event patterns, Similar impact level, Similar intensity
+        </div>
+        <div class="match-details">
+          <div class="detail-item">
+            <strong>Actors Involved:</strong>
+            India, China, Bhutan
+          </div>
+          <div class="detail-item">
+            <strong>CAMEO Code:</strong>
+            138
+          </div>
+          <div class="detail-item">
+            <strong>Goldstein Scale:</strong>
+            -6.5
+          </div>
+          <div class="detail-item">
+            <strong>Sentiment Average:</strong>
+            -0.65
+          </div>
+          <div class="detail-item">
+            <strong>Duration:</strong>
+            73 days
+          </div>
+          <div class="detail-item">
+            <strong>India Impact Score:</strong>
+            85/100
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-primary);">
+          <strong>Resolution:</strong><br>
+          Mutual withdrawal after diplomatic negotiations
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-accent);">
+          <strong>Key Lessons:</strong><br>
+          Extended standoffs can be resolved through quiet diplomacy. Both sides need face-saving exit strategy.
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 6px; border-left: 3px solid #2196F3;">
+          <strong>Relevant IR Theory:</strong> Constructivism<br>
+          <strong>Prediction Insight:</strong><br>
+          Border disputes with China follow pattern of escalation-negotiation-withdrawal. Identity and prestige key factors.
+        </div>
+      </div>
+    
+      <div class="historical-match-card">
+        <div class="match-header">
+          <div>
+            <h4 style="margin-bottom: 8px;">1999 Kargil Conflict - India-Pakistan Border Escalation</h4>
+            <div style="font-size: 12px; color: var(--color-text-secondary);">1999-05-26</div>
+          </div>
+          <div class="similarity-badge">75% Match</div>
+        </div>
+        <div style="margin: 12px 0; padding: 12px; background: var(--color-surface); border-radius: 6px;">
+          <strong>Why this matches:</strong> Same region, Same country involved, Similar event patterns, Similar impact level
+        </div>
+        <div class="match-details">
+          <div class="detail-item">
+            <strong>Actors Involved:</strong>
+            India, Pakistan
+          </div>
+          <div class="detail-item">
+            <strong>CAMEO Code:</strong>
+            190
+          </div>
+          <div class="detail-item">
+            <strong>Goldstein Scale:</strong>
+            -8.5
+          </div>
+          <div class="detail-item">
+            <strong>Sentiment Average:</strong>
+            -0.85
+          </div>
+          <div class="detail-item">
+            <strong>Duration:</strong>
+            74 days
+          </div>
+          <div class="detail-item">
+            <strong>India Impact Score:</strong>
+            95/100
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-primary);">
+          <strong>Resolution:</strong><br>
+          Military victory for India, diplomatic settlement
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-accent);">
+          <strong>Key Lessons:</strong><br>
+          Limited conflict between nuclear powers requires international mediation. Clear military objectives and diplomatic engagement crucial.
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 6px; border-left: 3px solid #2196F3;">
+          <strong>Relevant IR Theory:</strong> Realism<br>
+          <strong>Prediction Insight:</strong><br>
+          Similar border incidents can escalate to limited war if diplomatic channels fail. Nuclear deterrence prevents full-scale war.
+        </div>
+      </div>
+    
+      <div class="historical-match-card">
+        <div class="match-header">
+          <div>
+            <h4 style="margin-bottom: 8px;">2001-2002 India-Pakistan Military Standoff</h4>
+            <div style="font-size: 12px; color: var(--color-text-secondary);">2001-12-13</div>
+          </div>
+          <div class="similarity-badge">75% Match</div>
+        </div>
+        <div style="margin: 12px 0; padding: 12px; background: var(--color-surface); border-radius: 6px;">
+          <strong>Why this matches:</strong> Same region, Same country involved, Similar event patterns, Similar impact level
+        </div>
+        <div class="match-details">
+          <div class="detail-item">
+            <strong>Actors Involved:</strong>
+            India, Pakistan
+          </div>
+          <div class="detail-item">
+            <strong>CAMEO Code:</strong>
+            138
+          </div>
+          <div class="detail-item">
+            <strong>Goldstein Scale:</strong>
+            -7.2
+          </div>
+          <div class="detail-item">
+            <strong>Sentiment Average:</strong>
+            -0.78
+          </div>
+          <div class="detail-item">
+            <strong>Duration:</strong>
+            276 days
+          </div>
+          <div class="detail-item">
+            <strong>India Impact Score:</strong>
+            88/100
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-primary);">
+          <strong>Resolution:</strong><br>
+          De-escalation through international pressure
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-accent);">
+          <strong>Key Lessons:</strong><br>
+          Sustained military mobilization without clear objectives is costly. Third-party mediation essential.
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 6px; border-left: 3px solid #2196F3;">
+          <strong>Relevant IR Theory:</strong> Realism<br>
+          <strong>Prediction Insight:</strong><br>
+          Terrorist attacks can trigger prolonged standoffs. Economic costs and international pressure force de-escalation.
+        </div>
+      </div>
+    
+      <div class="historical-match-card">
+        <div class="match-header">
+          <div>
+            <h4 style="margin-bottom: 8px;">2020 Galwan Valley Clash - India-China Border Conflict</h4>
+            <div style="font-size: 12px; color: var(--color-text-secondary);">2020-06-15</div>
+          </div>
+          <div class="similarity-badge">75% Match</div>
+        </div>
+        <div style="margin: 12px 0; padding: 12px; background: var(--color-surface); border-radius: 6px;">
+          <strong>Why this matches:</strong> Same region, Same country involved, Similar event patterns, Similar impact level
+        </div>
+        <div class="match-details">
+          <div class="detail-item">
+            <strong>Actors Involved:</strong>
+            India, China
+          </div>
+          <div class="detail-item">
+            <strong>CAMEO Code:</strong>
+            195
+          </div>
+          <div class="detail-item">
+            <strong>Goldstein Scale:</strong>
+            -7.8
+          </div>
+          <div class="detail-item">
+            <strong>Sentiment Average:</strong>
+            -0.82
+          </div>
+          <div class="detail-item">
+            <strong>Duration:</strong>
+            365 days
+          </div>
+          <div class="detail-item">
+            <strong>India Impact Score:</strong>
+            93/100
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-primary);">
+          <strong>Resolution:</strong><br>
+          Ongoing negotiations, partial disengagement
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-accent);">
+          <strong>Key Lessons:</strong><br>
+          Hand-to-hand combat in modern era shows restraint despite technology. Long negotiations needed for complex disengagement.
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 6px; border-left: 3px solid #2196F3;">
+          <strong>Relevant IR Theory:</strong> Realism<br>
+          <strong>Prediction Insight:</strong><br>
+          LAC incidents can cause sustained tension. Both sides avoid escalation but maintain pressure.
+        </div>
+      </div>
+    
+      <div class="historical-match-card">
+        <div class="match-header">
+          <div>
+            <h4 style="margin-bottom: 8px;">1962 Sino-Indian War</h4>
+            <div style="font-size: 12px; color: var(--color-text-secondary);">1962-10-20</div>
+          </div>
+          <div class="similarity-badge">75% Match</div>
+        </div>
+        <div style="margin: 12px 0; padding: 12px; background: var(--color-surface); border-radius: 6px;">
+          <strong>Why this matches:</strong> Same region, Same country involved, Similar event patterns, Similar impact level
+        </div>
+        <div class="match-details">
+          <div class="detail-item">
+            <strong>Actors Involved:</strong>
+            India, China
+          </div>
+          <div class="detail-item">
+            <strong>CAMEO Code:</strong>
+            193
+          </div>
+          <div class="detail-item">
+            <strong>Goldstein Scale:</strong>
+            -9
+          </div>
+          <div class="detail-item">
+            <strong>Sentiment Average:</strong>
+            -0.88
+          </div>
+          <div class="detail-item">
+            <strong>Duration:</strong>
+            32 days
+          </div>
+          <div class="detail-item">
+            <strong>India Impact Score:</strong>
+            96/100
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-primary);">
+          <strong>Resolution:</strong><br>
+          Chinese unilateral ceasefire, territorial status quo
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-accent);">
+          <strong>Key Lessons:</strong><br>
+          Unpreparedness leads to military defeat. Border disputes require long-term strategic planning.
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 6px; border-left: 3px solid #2196F3;">
+          <strong>Relevant IR Theory:</strong> Realism<br>
+          <strong>Prediction Insight:</strong><br>
+          Historical grievances shape current border policy. India's military modernization directly linked to 1962 experience.
+        </div>
+      </div>
+    </div>
+                <div class="section-divider"></div>
+                <h3>Escalation Timeline Analysis</h3>
+                <div class="timeline-chart-container">
+                    <canvas id="escalationTimeline" style="display: block; box-sizing: border-box; height: 299.3px; width: 593.3px;" height="224" width="445"></canvas>
+                </div>
+                <div class="section-divider"></div>
+                <h3>How Historical Pattern Matching Works</h3>
+                <div id="flowchartSection" class="flowchart-section">
+    <div class="flowchart-steps">
+      
+        <div class="flowchart-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Event Detection</div>
+            <div class="step-description">GDELT database monitors global news for geopolitical events with real-time updates</div>
+          </div>
+        </div>
+      
+        <div class="flowchart-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Feature Extraction</div>
+            <div class="step-description">Extract key features: region, actors, event type, sentiment, CAMEO codes, intensity</div>
+          </div>
+        </div>
+      
+        <div class="flowchart-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Historical Database Query</div>
+            <div class="step-description">Search 20+ historical incidents (1962-2022) for pattern matching</div>
+          </div>
+        </div>
+      
+        <div class="flowchart-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">Similarity Scoring</div>
+            <div class="step-description">Multi-factor scoring: region (20%), actors (25%), sentiment (15%), patterns (20%), impact (10%), intensity (10%)</div>
+          </div>
+        </div>
+      
+        <div class="flowchart-step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <div class="step-title">Theory Assignment</div>
+            <div class="step-description">Apply IR theory frameworks based on event characteristics and context</div>
+          </div>
+        </div>
+      
+        <div class="flowchart-step">
+          <div class="step-number">6</div>
+          <div class="step-content">
+            <div class="step-title">Prediction Generation</div>
+            <div class="step-description">Generate insights from historical outcomes, escalation patterns, and resolution strategies</div>
+          </div>
+        </div>
+      
+        <div class="flowchart-step">
+          <div class="step-number">7</div>
+          <div class="step-content">
+            <div class="step-title">Visualization</div>
+            <div class="step-description">Display matched incidents with similarity scores, timelines, and actionable lessons</div>
+          </div>
+        </div>
+      
+    </div>
+  </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IR Theory Modal -->
+    <div id="theoryModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="theoryModalTitle">IR Theory Analysis</h2>
+                <button class="modal-close" onclick="closeTheoryModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="theoryContent" class="theory-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theory Comparison Modal -->
+    <div id="comparisonModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Multi-Theory Comparison</h2>
+                <button class="modal-close" onclick="closeComparisonModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="theory-selector">
+                    <label>Select theories to compare:</label>
+                    <div id="theoryCheckboxes" class="theory-checkboxes"></div>
+                    <button class="btn btn-primary" onclick="renderComparison()">Compare Selected</button>
+                </div>
+                <div id="comparisonGrid" class="comparison-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Article Modal -->
+    <div id="articleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle"></h2>
+                <button class="modal-close" id="closeModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="article-meta">
+                    <span class="article-source" id="modalSource"></span>
+                    <span class="article-time" id="modalTime"></span>
+                </div>
+                <div class="article-tags" id="modalTags"></div>
+                <p class="article-excerpt" id="modalExcerpt"></p>
+                <div class="article-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Region:</span>
+                        <span id="modalRegion"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Country:</span>
+                        <span id="modalCountry"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Event Type:</span>
+                        <span id="modalEventType"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Sentiment:</span>
+                        <span id="modalSentiment"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Conflict Intensity:</span>
+                        <span id="modalIntensity"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">India Impact:</span>
+                        <span id="modalImpact"></span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" id="readMoreBtn">Read Full Article</button>
+                    <button class="btn btn-secondary" id="bookmarkBtn">Bookmark</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <p><strong>Data Sources:</strong> Powered by GDELT Project, NewsAPI.org, Hugging Face NLP</p>
+                <p class="disclaimer">Live data powered by GDELT Project via backend API. First load may take 30-60 seconds.</p>
+            </div>
+            <div class="footer-section">
+                <p><strong>Last Updated:</strong> <span id="lastUpdate">10/26/2025, 9:53:51 PM</span></p>
+                <p><a href="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html#" target="_blank">GitHub</a> | <a href="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d714fbfbfe1277d5f7c97fc256ad9310/3d3c82e2-bb4d-4b80-a17d-c4f6ca10ad8f/index.html#">Contact/Feedback</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="./GeoPulse Intelligence - Global Geopolitical News Dashboard latest index_files/app.js.download"></script>
+
+</body></html>

@@ -1,0 +1,2905 @@
+// GeoPulse Intelligence Dashboard Application
+
+// ==================== LIVE BACKEND INTEGRATION ====================
+const API_BASE_URL = 'https://geopulse-backend-k4aq.onrender.com';
+
+// Global state for API data
+let apiData = {
+  news: [],
+  predictions: [],
+  isLoading: false,
+  lastFetchTime: null,
+  error: null
+};
+
+// API Fetch Functions
+async function fetchNews(region = 'South Asia', timespan = '7d', maxrecords = 250) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/news?region=${encodeURIComponent(region)}&timespan=${timespan}&maxrecords=${maxrecords}`);
+    if (!response.ok) throw new Error('API request failed');
+    const data = await response.json();
+    return data.articles || [];
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    return [];
+  }
+}
+
+async function fetchHistoricalContext(eventId, similarity = 60) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/history?eventId=${eventId}&similarity=${similarity}`);
+    if (!response.ok) throw new Error('History API request failed');
+    const data = await response.json();
+    return data.historical_matches || [];
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    return [];
+  }
+}
+
+async function fetchPredictions() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/predictions`);
+    if (!response.ok) throw new Error('Predictions API request failed');
+    const data = await response.json();
+    return data.predictions || [];
+  } catch (error) {
+    console.error('Error fetching predictions:', error);
+    return [];
+  }
+}
+
+async function fetchSentiment(text) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/sentiment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    if (!response.ok) throw new Error('Sentiment API request failed');
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching sentiment:', error);
+    return null;
+  }
+}
+
+async function checkBackendHealth() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/health`);
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Show loading indicator
+function showLoadingState(message = 'Loading data from server...') {
+  const loadingHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center;">
+      <div style="width: 50px; height: 50px; border: 4px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+      <div style="font-size: 18px; font-weight: 600; color: var(--color-text); margin-bottom: 8px;">${message}</div>
+      <div style="font-size: 14px; color: var(--color-text-secondary); max-width: 500px;">First request may take 30-60 seconds if backend is starting up...</div>
+    </div>
+    <style>
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  `;
+  return loadingHTML;
+}
+
+// Show error state
+function showErrorState(message) {
+  return `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+      <div style="font-size: 18px; font-weight: 600; color: var(--color-danger); margin-bottom: 12px;">Unable to Load Data</div>
+      <div style="font-size: 14px; color: var(--color-text-secondary); max-width: 500px; margin-bottom: 20px;">${message}</div>
+      <button class="btn btn-primary" onclick="location.reload()">Retry</button>
+    </div>
+  `;
+}
+
+// Show empty state
+function showEmptyState() {
+  return `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
+      <div style="font-size: 18px; font-weight: 600; color: var(--color-text); margin-bottom: 12px;">No Data Available</div>
+      <div style="font-size: 14px; color: var(--color-text-secondary); max-width: 500px;">Backend may be starting up or GDELT API may have limited results for this query. Please try again in a moment.</div>
+    </div>
+  `;
+}
+
+// Historical Incidents Data (Sample)
+const historicalIncidents = [
+  {
+    id: "hist_1",
+    title: "1999 Kargil Conflict - India-Pakistan Border Escalation",
+    date: "1999-05-26",
+    region: "South Asia",
+    actors: ["India", "Pakistan"],
+    cameo_code: "190",
+    goldstein_scale: -8.5,
+    sentiment_avg: -0.85,
+    resolution: "Military victory for India, diplomatic settlement",
+    duration_days: 74,
+    india_impact_score: 95,
+    similarity_factors: ["border_dispute", "military_mobilization", "nuclear_powers"],
+    key_lessons: "Limited conflict between nuclear powers requires international mediation. Clear military objectives and diplomatic engagement crucial.",
+    relevant_theory: "Realism",
+    prediction_insight: "Similar border incidents can escalate to limited war if diplomatic channels fail. Nuclear deterrence prevents full-scale war.",
+    escalation_curve: [2, 4, 7, 9, 8, 6, 4, 2],
+    impact_curve: [3, 5, 8, 9, 9, 7, 5, 3]
+  },
+  {
+    id: "hist_2",
+    title: "2001-2002 India-Pakistan Military Standoff",
+    date: "2001-12-13",
+    region: "South Asia",
+    actors: ["India", "Pakistan"],
+    cameo_code: "138",
+    goldstein_scale: -7.2,
+    sentiment_avg: -0.78,
+    resolution: "De-escalation through international pressure",
+    duration_days: 276,
+    india_impact_score: 88,
+    similarity_factors: ["terrorism", "military_mobilization", "nuclear_brinkmanship"],
+    key_lessons: "Sustained military mobilization without clear objectives is costly. Third-party mediation essential.",
+    relevant_theory: "Realism",
+    prediction_insight: "Terrorist attacks can trigger prolonged standoffs. Economic costs and international pressure force de-escalation.",
+    escalation_curve: [1, 3, 6, 8, 7, 6, 5, 3],
+    impact_curve: [2, 4, 7, 8, 8, 7, 6, 4]
+  },
+  {
+    id: "hist_3",
+    title: "2008 Mumbai Terror Attacks and Aftermath",
+    date: "2008-11-26",
+    region: "South Asia",
+    actors: ["India", "Pakistan", "Non-state actors"],
+    cameo_code: "180",
+    goldstein_scale: -9.2,
+    sentiment_avg: -0.92,
+    resolution: "Diplomatic engagement, international sanctions on perpetrators",
+    duration_days: 180,
+    india_impact_score: 92,
+    similarity_factors: ["terrorism", "urban_attack", "international_pressure"],
+    key_lessons: "Non-state actors can trigger state-level crises. International cooperation critical for preventing escalation.",
+    relevant_theory: "Liberalism",
+    prediction_insight: "Major terror attacks test restraint. International institutions and economic interdependence prevent military response.",
+    escalation_curve: [9, 8, 7, 6, 4, 3, 2, 1],
+    impact_curve: [10, 9, 8, 7, 6, 5, 4, 3]
+  },
+  {
+    id: "hist_4",
+    title: "2017 Doklam Standoff - India-China Border Dispute",
+    date: "2017-06-16",
+    region: "South Asia",
+    actors: ["India", "China", "Bhutan"],
+    cameo_code: "138",
+    goldstein_scale: -6.5,
+    sentiment_avg: -0.65,
+    resolution: "Mutual withdrawal after diplomatic negotiations",
+    duration_days: 73,
+    india_impact_score: 85,
+    similarity_factors: ["border_dispute", "strategic_location", "face_saving"],
+    key_lessons: "Extended standoffs can be resolved through quiet diplomacy. Both sides need face-saving exit strategy.",
+    relevant_theory: "Constructivism",
+    prediction_insight: "Border disputes with China follow pattern of escalation-negotiation-withdrawal. Identity and prestige key factors.",
+    escalation_curve: [2, 5, 7, 7, 6, 5, 3, 1],
+    impact_curve: [3, 6, 8, 8, 7, 6, 4, 2]
+  },
+  {
+    id: "hist_5",
+    title: "2019 Balakot Airstrike and Subsequent Crisis",
+    date: "2019-02-26",
+    region: "South Asia",
+    actors: ["India", "Pakistan"],
+    cameo_code: "190",
+    goldstein_scale: -8.0,
+    sentiment_avg: -0.80,
+    resolution: "De-escalation after capture and release of pilot",
+    duration_days: 14,
+    india_impact_score: 90,
+    similarity_factors: ["cross_border_strike", "air_combat", "rapid_deescalation"],
+    key_lessons: "Surgical strikes can achieve objectives without full war. Humanitarian gestures facilitate de-escalation.",
+    relevant_theory: "Realism",
+    prediction_insight: "Limited strikes demonstrate resolve but both sides seek quick de-escalation. International community aids cooling.",
+    escalation_curve: [1, 8, 9, 7, 4, 2, 1, 0],
+    impact_curve: [2, 9, 10, 8, 5, 3, 2, 1]
+  },
+  {
+    id: "hist_6",
+    title: "2020 Galwan Valley Clash - India-China Border Conflict",
+    date: "2020-06-15",
+    region: "South Asia",
+    actors: ["India", "China"],
+    cameo_code: "195",
+    goldstein_scale: -7.8,
+    sentiment_avg: -0.82,
+    resolution: "Ongoing negotiations, partial disengagement",
+    duration_days: 365,
+    india_impact_score: 93,
+    similarity_factors: ["border_clash", "casualties", "military_buildup"],
+    key_lessons: "Hand-to-hand combat in modern era shows restraint despite technology. Long negotiations needed for complex disengagement.",
+    relevant_theory: "Realism",
+    prediction_insight: "LAC incidents can cause sustained tension. Both sides avoid escalation but maintain pressure.",
+    escalation_curve: [1, 9, 8, 7, 6, 5, 4, 4],
+    impact_curve: [2, 10, 9, 8, 7, 6, 5, 5]
+  },
+  {
+    id: "hist_7",
+    title: "1971 Bangladesh Liberation War",
+    date: "1971-12-03",
+    region: "South Asia",
+    actors: ["India", "Pakistan", "Bangladesh"],
+    cameo_code: "193",
+    goldstein_scale: -9.5,
+    sentiment_avg: -0.90,
+    resolution: "Military victory, creation of Bangladesh",
+    duration_days: 13,
+    india_impact_score: 98,
+    similarity_factors: ["humanitarian_crisis", "regional_instability", "decisive_intervention"],
+    key_lessons: "Humanitarian crises can justify military intervention. Swift military action can achieve clear outcomes.",
+    relevant_theory: "Liberalism",
+    prediction_insight: "Regional humanitarian disasters may require intervention. India's regional power status established.",
+    escalation_curve: [3, 5, 7, 9, 9, 8, 6, 2],
+    impact_curve: [4, 6, 8, 10, 10, 9, 7, 3]
+  },
+  {
+    id: "hist_8",
+    title: "1998 Nuclear Tests and International Response",
+    date: "1998-05-11",
+    region: "South Asia",
+    actors: ["India", "Pakistan", "International Community"],
+    cameo_code: "172",
+    goldstein_scale: -6.0,
+    sentiment_avg: -0.58,
+    resolution: "International sanctions, gradual normalization",
+    duration_days: 540,
+    india_impact_score: 87,
+    similarity_factors: ["nuclear_capability", "strategic_deterrence", "sanctions"],
+    key_lessons: "Nuclear capability changes regional dynamics. Initial sanctions give way to acceptance of new reality.",
+    relevant_theory: "Realism",
+    prediction_insight: "Strategic weapons programs face initial isolation but eventually recognition. Power politics override non-proliferation norms.",
+    escalation_curve: [1, 6, 7, 6, 5, 4, 3, 2],
+    impact_curve: [2, 8, 9, 7, 6, 5, 4, 3]
+  },
+  {
+    id: "hist_9",
+    title: "2016 Uri Attack and Surgical Strikes",
+    date: "2016-09-18",
+    region: "South Asia",
+    actors: ["India", "Pakistan"],
+    cameo_code: "180",
+    goldstein_scale: -8.3,
+    sentiment_avg: -0.83,
+    resolution: "Limited military response, diplomatic tensions",
+    duration_days: 30,
+    india_impact_score: 89,
+    similarity_factors: ["terrorism", "cross_border_operation", "new_doctrine"],
+    key_lessons: "Surgical strikes provide calibrated response to terrorism. Demonstrates capability without full escalation.",
+    relevant_theory: "Realism",
+    prediction_insight: "India's willingness to conduct cross-border operations changes deterrence calculus. Pakistan's response constrained.",
+    escalation_curve: [1, 7, 8, 6, 4, 3, 2, 1],
+    impact_curve: [2, 8, 9, 7, 5, 4, 3, 2]
+  },
+  {
+    id: "hist_10",
+    title: "1962 Sino-Indian War",
+    date: "1962-10-20",
+    region: "South Asia",
+    actors: ["India", "China"],
+    cameo_code: "193",
+    goldstein_scale: -9.0,
+    sentiment_avg: -0.88,
+    resolution: "Chinese unilateral ceasefire, territorial status quo",
+    duration_days: 32,
+    india_impact_score: 96,
+    similarity_factors: ["border_dispute", "military_defeat", "strategic_lesson"],
+    key_lessons: "Unpreparedness leads to military defeat. Border disputes require long-term strategic planning.",
+    relevant_theory: "Realism",
+    prediction_insight: "Historical grievances shape current border policy. India's military modernization directly linked to 1962 experience.",
+    escalation_curve: [2, 4, 7, 9, 8, 6, 3, 1],
+    impact_curve: [3, 5, 8, 10, 9, 7, 4, 2]
+  },
+  {
+    id: "hist_11",
+    title: "1999 Kandahar Hijacking Crisis",
+    date: "1999-12-24",
+    region: "South Asia",
+    actors: ["India", "Pakistan", "Afghanistan"],
+    cameo_code: "176",
+    goldstein_scale: -7.5,
+    sentiment_avg: -0.75,
+    resolution: "Prisoner exchange under duress",
+    duration_days: 8,
+    india_impact_score: 82,
+    similarity_factors: ["terrorism", "hostage_situation", "difficult_choices"],
+    key_lessons: "Hostage situations force difficult policy choices. Released terrorists can cause future harm.",
+    relevant_theory: "Liberalism",
+    prediction_insight: "Terrorism challenges liberal values. Human life vs. long-term security trade-offs.",
+    escalation_curve: [1, 5, 8, 9, 7, 4, 2, 1],
+    impact_curve: [2, 6, 9, 10, 8, 5, 3, 2]
+  },
+  {
+    id: "hist_12",
+    title: "2013 Pathankot Airbase Attack",
+    date: "2016-01-02",
+    region: "South Asia",
+    actors: ["India", "Pakistan"],
+    cameo_code: "180",
+    goldstein_scale: -7.8,
+    sentiment_avg: -0.76,
+    resolution: "Security review, diplomatic protests",
+    duration_days: 45,
+    india_impact_score: 84,
+    similarity_factors: ["terrorism", "military_installation", "intelligence_failure"],
+    key_lessons: "High-value targets remain vulnerable. Intelligence sharing with adversary has limits.",
+    relevant_theory: "Realism",
+    prediction_insight: "Attacks on military bases test restraint. Cost-benefit analysis prevents escalation.",
+    escalation_curve: [1, 6, 7, 5, 4, 3, 2, 1],
+    impact_curve: [2, 7, 8, 6, 5, 4, 3, 2]
+  },
+  {
+    id: "hist_13",
+    title: "2021 Afghanistan Taliban Takeover Impact on India",
+    date: "2021-08-15",
+    region: "South Asia",
+    actors: ["Afghanistan", "Taliban", "India"],
+    cameo_code: "145",
+    goldstein_scale: -6.8,
+    sentiment_avg: -0.72,
+    resolution: "Strategic recalibration, humanitarian assistance",
+    duration_days: 180,
+    india_impact_score: 78,
+    similarity_factors: ["regional_instability", "terrorism_safe_haven", "strategic_loss"],
+    key_lessons: "Rapid regime changes affect regional balance. Hedging strategies necessary.",
+    relevant_theory: "Constructivism",
+    prediction_insight: "Regional power vacuums impact India's security. New engagement models needed.",
+    escalation_curve: [2, 5, 8, 7, 6, 5, 4, 4],
+    impact_curve: [3, 6, 9, 8, 7, 6, 5, 5]
+  },
+  {
+    id: "hist_14",
+    title: "2019 Pulwama Terror Attack",
+    date: "2019-02-14",
+    region: "South Asia",
+    actors: ["India", "Pakistan"],
+    cameo_code: "180",
+    goldstein_scale: -8.8,
+    sentiment_avg: -0.87,
+    resolution: "Military retaliation (Balakot strikes)",
+    duration_days: 21,
+    india_impact_score: 94,
+    similarity_factors: ["mass_casualty_terrorism", "public_pressure", "military_response"],
+    key_lessons: "High-casualty attacks generate strong public demand for action. Calibrated response needed.",
+    relevant_theory: "Constructivism",
+    prediction_insight: "Domestic politics drive foreign policy during crises. National identity and honor central.",
+    escalation_curve: [1, 9, 9, 7, 4, 2, 1, 0],
+    impact_curve: [2, 10, 10, 8, 5, 3, 2, 1]
+  },
+  {
+    id: "hist_15",
+    title: "1984 Operation Blue Star and Aftermath",
+    date: "1984-06-01",
+    region: "South Asia",
+    actors: ["India"],
+    cameo_code: "172",
+    goldstein_scale: -7.0,
+    sentiment_avg: -0.70,
+    resolution: "Military operation, long-term reconciliation",
+    duration_days: 120,
+    india_impact_score: 75,
+    similarity_factors: ["internal_security", "religious_tensions", "political_assassination"],
+    key_lessons: "Military action against religious sites has lasting consequences. Internal conflicts affect external relations.",
+    relevant_theory: "Constructivism",
+    prediction_insight: "Identity-based conflicts require political not just military solutions. Diaspora implications.",
+    escalation_curve: [3, 6, 9, 7, 5, 4, 3, 3],
+    impact_curve: [4, 7, 10, 8, 6, 5, 4, 4]
+  },
+  {
+    id: "hist_16",
+    title: "2020 India-China Apps Ban and Economic Tensions",
+    date: "2020-06-29",
+    region: "South Asia",
+    actors: ["India", "China"],
+    cameo_code: "163",
+    goldstein_scale: -5.5,
+    sentiment_avg: -0.58,
+    resolution: "Sustained economic restrictions",
+    duration_days: 730,
+    india_impact_score: 72,
+    similarity_factors: ["economic_warfare", "technology_security", "national_security"],
+    key_lessons: "Economic tools complement military strategy. Technology sovereignty becoming priority.",
+    relevant_theory: "Marxism",
+    prediction_insight: "Economic interdependence weaponized during conflicts. Digital domain new battleground.",
+    escalation_curve: [1, 4, 6, 6, 5, 5, 4, 4],
+    impact_curve: [2, 5, 7, 7, 6, 6, 5, 5]
+  },
+  {
+    id: "hist_17",
+    title: "2008 Maldives Political Crisis and Indian Response",
+    date: "2008-10-23",
+    region: "South Asia",
+    actors: ["Maldives", "India"],
+    cameo_code: "050",
+    goldstein_scale: 3.5,
+    sentiment_avg: 0.35,
+    resolution: "Political transition supported",
+    duration_days: 90,
+    india_impact_score: 68,
+    similarity_factors: ["neighborhood_first", "democratic_transition", "regional_influence"],
+    key_lessons: "Soft power and diplomatic support crucial in neighborhood. Democracy promotion serves strategic interests.",
+    relevant_theory: "Liberalism",
+    prediction_insight: "Small neighbors' politics impact regional stability. India's role as democratic anchor.",
+    escalation_curve: [2, 3, 4, 3, 2, 2, 1, 1],
+    impact_curve: [3, 4, 5, 4, 3, 3, 2, 2]
+  },
+  {
+    id: "hist_18",
+    title: "2015 Nepal Blockade Crisis",
+    date: "2015-09-23",
+    region: "South Asia",
+    actors: ["Nepal", "India"],
+    cameo_code: "163",
+    goldstein_scale: -4.8,
+    sentiment_avg: -0.52,
+    resolution: "Gradual normalization of relations",
+    duration_days: 135,
+    india_impact_score: 71,
+    similarity_factors: ["economic_pressure", "constitutional_issues", "public_backlash"],
+    key_lessons: "Economic leverage can backfire diplomatically. Perception of bullying damages soft power.",
+    relevant_theory: "Constructivism",
+    prediction_insight: "Big brother image problematic in neighborhood. China exploits such rifts.",
+    escalation_curve: [1, 4, 6, 7, 6, 5, 3, 2],
+    impact_curve: [2, 5, 7, 8, 7, 6, 4, 3]
+  },
+  {
+    id: "hist_19",
+    title: "2017 Sikkim-Bhutan-China Tri-Junction Tensions",
+    date: "2017-06-16",
+    region: "South Asia",
+    actors: ["India", "China", "Bhutan"],
+    cameo_code: "138",
+    goldstein_scale: -6.5,
+    sentiment_avg: -0.65,
+    resolution: "Diplomatic negotiations, status quo maintained",
+    duration_days: 73,
+    india_impact_score: 85,
+    similarity_factors: ["strategic_location", "ally_protection", "face_saving"],
+    key_lessons: "India willing to defend small allies. Strategic geography crucial. Patient diplomacy works.",
+    relevant_theory: "Realism",
+    prediction_insight: "Buffer states remain flashpoints. India-China boundary disputes persist.",
+    escalation_curve: [2, 5, 7, 7, 6, 5, 3, 1],
+    impact_curve: [3, 6, 8, 8, 7, 6, 4, 2]
+  },
+  {
+    id: "hist_20",
+    title: "2022 Sri Lanka Economic Crisis and Indian Aid",
+    date: "2022-03-15",
+    region: "South Asia",
+    actors: ["Sri Lanka", "India"],
+    cameo_code: "070",
+    goldstein_scale: 4.2,
+    sentiment_avg: 0.42,
+    resolution: "Economic assistance package",
+    duration_days: 180,
+    india_impact_score: 76,
+    similarity_factors: ["economic_crisis", "humanitarian_aid", "strategic_influence"],
+    key_lessons: "Economic crises create opportunities for influence. Rapid response builds goodwill.",
+    relevant_theory: "Liberalism",
+    prediction_insight: "Neighborhood crises test India's capacity as regional leader. China competition factor.",
+    escalation_curve: [2, 4, 6, 5, 4, 3, 2, 2],
+    impact_curve: [3, 5, 7, 6, 5, 4, 3, 3]
+  }
+];
+
+// IR Theory Frameworks
+const irTheories = {
+  realism: {
+    name: "Realism",
+    color: "#F44336",
+    description: "Focuses on power, national interest, and security. States are primary actors in an anarchic international system.",
+    key_concepts: ["Balance of power", "National interest", "Security dilemma", "Anarchy", "Self-help"],
+    application: "Analyzes conflicts through lens of power competition, territorial disputes, and strategic deterrence.",
+    strengths: "Explains military buildups, arms races, and alliance formations.",
+    weaknesses: "Underestimates role of international institutions and economic interdependence."
+  },
+  liberalism: {
+    name: "Liberalism",
+    color: "#4CAF50",
+    description: "Emphasizes international cooperation, institutions, democracy, and economic interdependence.",
+    key_concepts: ["Democratic peace", "International institutions", "Economic interdependence", "Collective security"],
+    application: "Examines how trade, treaties, and international organizations shape state behavior.",
+    strengths: "Explains cooperation despite anarchy. Accounts for non-state actors.",
+    weaknesses: "Overly optimistic about cooperation. Institutions may reflect power imbalances."
+  },
+  constructivism: {
+    name: "Constructivism",
+    color: "#2196F3",
+    description: "Focuses on ideas, identities, norms, and social construction of international politics.",
+    key_concepts: ["Identity formation", "Social norms", "Ideas matter", "Intersubjective meanings"],
+    application: "Analyzes how national identity, historical narratives, and cultural factors shape foreign policy.",
+    strengths: "Explains identity-based conflicts and norm evolution.",
+    weaknesses: "Less useful for predicting specific outcomes. Can be vague."
+  },
+  marxism: {
+    name: "Marxism/Critical Theory",
+    color: "#FFC107",
+    description: "Examines economic structures, class conflict, and how capitalism shapes international relations.",
+    key_concepts: ["Economic determinism", "Class conflict", "Imperialism", "World systems theory"],
+    application: "Studies economic exploitation, North-South divide, and how economic interests drive conflicts.",
+    strengths: "Highlights economic inequalities and structural factors.",
+    weaknesses: "Overemphasizes economics. Cold War legacy limits applicability."
+  },
+  feminism: {
+    name: "Feminism",
+    color: "#E91E63",
+    description: "Examines gender dynamics, masculinity in war, and women's roles in international politics.",
+    key_concepts: ["Gender hierarchies", "Masculinity & war", "Women's security", "Intersectionality"],
+    application: "Analyzes how gender norms influence conflict, security policy, and peace processes.",
+    strengths: "Reveals hidden gender dimensions of IR. Broadens security concept.",
+    weaknesses: "Sometimes seen as niche. Integration with mainstream theory challenging."
+  },
+  postcolonialism: {
+    name: "Postcolonialism",
+    color: "#9C27B0",
+    description: "Studies legacies of colonialism, power imbalances, and voices from the Global South.",
+    key_concepts: ["Colonial legacy", "Subaltern voices", "Neo-imperialism", "Cultural domination"],
+    application: "Examines how colonial history shapes current conflicts and power structures.",
+    strengths: "Centers marginalized perspectives. Questions Western-centric narratives.",
+    weaknesses: "Can be presentist. Risk of essentializing colonialism's impact."
+  }
+};
+
+// GeoPulse Intelligence Dashboard Application
+
+// Sample Data
+const sampleArticles = [
+  {
+    id: 1,
+    title: "India and China Hold 21st Round of Corps Commander-Level Talks on LAC",
+    source: "Times of India",
+    url: "https://timesofindia.com/article1",
+    timestamp: "2025-10-26T10:30:00Z",
+    country: "India",
+    region: "South Asia",
+    sentiment_score: 0.2,
+    sentiment_label: "Neutral",
+    conflict_intensity: "Medium",
+    india_impact: "High",
+    india_impact_score: 85,
+    language: "English",
+    tags: ["Border Dispute", "LAC", "Military", "Diplomacy"],
+    excerpt: "Indian and Chinese military commanders held the 21st round of talks to resolve the standoff along the Line of Actual Control in eastern Ladakh.",
+    event_type: "Diplomatic Meeting",
+    latitude: 34.1526,
+    longitude: 77.5770
+  },
+  {
+    id: 2,
+    title: "Pakistan Faces Economic Crisis as IMF Bailout Delayed",
+    source: "Dawn",
+    url: "https://dawn.com/article2",
+    timestamp: "2025-10-26T08:15:00Z",
+    country: "Pakistan",
+    region: "South Asia",
+    sentiment_score: -0.7,
+    sentiment_label: "Negative",
+    conflict_intensity: "Low",
+    india_impact: "Medium",
+    india_impact_score: 55,
+    language: "English",
+    tags: ["Economy", "IMF", "Political Crisis"],
+    excerpt: "Pakistan's economy faces severe challenges as the International Monetary Fund delays crucial bailout package amid political instability.",
+    event_type: "Economic",
+    latitude: 33.6844,
+    longitude: 73.0479
+  },
+  {
+    id: 3,
+    title: "Israel Launches Precision Strikes in Southern Lebanon Amid Escalation",
+    source: "Al Jazeera",
+    url: "https://aljazeera.com/article3",
+    timestamp: "2025-10-26T06:45:00Z",
+    country: "Israel",
+    region: "Middle East",
+    sentiment_score: -0.9,
+    sentiment_label: "Negative",
+    conflict_intensity: "High",
+    india_impact: "Medium",
+    india_impact_score: 60,
+    language: "English",
+    tags: ["Military Action", "Middle East Conflict", "Israel-Lebanon"],
+    excerpt: "Israeli Defense Forces conducted targeted strikes against Hezbollah positions in southern Lebanon, marking the latest escalation in regional tensions.",
+    event_type: "Military Action",
+    latitude: 33.2733,
+    longitude: 35.2044
+  },
+  {
+    id: 4,
+    title: "US and India Strengthen Defense Cooperation Through New Tech-Sharing Deal",
+    source: "Reuters",
+    url: "https://reuters.com/article4",
+    timestamp: "2025-10-26T05:20:00Z",
+    country: "India",
+    region: "South Asia",
+    sentiment_score: 0.8,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "High",
+    india_impact_score: 90,
+    language: "English",
+    tags: ["Defense", "Strategic Partnership", "Technology Transfer"],
+    excerpt: "The United States and India signed a landmark agreement to share advanced defense technologies, further solidifying the Quad alliance.",
+    event_type: "Diplomatic Agreement",
+    latitude: 28.6139,
+    longitude: 77.2090
+  },
+  {
+    id: 5,
+    title: "Ukraine Reports Heavy Fighting in Eastern Donbas Region",
+    source: "BBC News",
+    url: "https://bbc.com/article5",
+    timestamp: "2025-10-25T22:30:00Z",
+    country: "Ukraine",
+    region: "Europe",
+    sentiment_score: -0.8,
+    sentiment_label: "Negative",
+    conflict_intensity: "High",
+    india_impact: "Low",
+    india_impact_score: 35,
+    language: "English",
+    tags: ["War", "Russia-Ukraine", "Military Action"],
+    excerpt: "Ukrainian forces are engaged in intense combat with Russian troops in the Donbas region, with both sides reporting significant casualties.",
+    event_type: "Military Action",
+    latitude: 48.0159,
+    longitude: 37.8028
+  },
+  {
+    id: 6,
+    title: "China Conducts Military Drills Near Taiwan Strait",
+    source: "South China Morning Post",
+    url: "https://scmp.com/article6",
+    timestamp: "2025-10-25T18:00:00Z",
+    country: "China",
+    region: "East Asia",
+    sentiment_score: -0.6,
+    sentiment_label: "Negative",
+    conflict_intensity: "Medium",
+    india_impact: "Medium",
+    india_impact_score: 50,
+    language: "English",
+    tags: ["Taiwan Strait", "Military Exercises", "Regional Tensions"],
+    excerpt: "Chinese People's Liberation Army launched large-scale military exercises in waters surrounding Taiwan, raising concerns about regional stability.",
+    event_type: "Military Exercise",
+    latitude: 25.0375,
+    longitude: 121.5625
+  },
+  {
+    id: 7,
+    title: "Iran Nuclear Talks Resume in Vienna with Cautious Optimism",
+    source: "Al Arabiya",
+    url: "https://alarabiya.com/article7",
+    timestamp: "2025-10-25T14:20:00Z",
+    country: "Iran",
+    region: "Middle East",
+    sentiment_score: 0.3,
+    sentiment_label: "Neutral",
+    conflict_intensity: "Medium",
+    india_impact: "Medium",
+    india_impact_score: 65,
+    language: "English",
+    tags: ["Nuclear Program", "Diplomacy", "Iran Deal"],
+    excerpt: "International negotiators reconvened in Vienna to discuss Iran's nuclear program, with diplomats expressing measured hope for progress.",
+    event_type: "Diplomatic Meeting",
+    latitude: 35.6892,
+    longitude: 51.3890
+  },
+  {
+    id: 8,
+    title: "Afghanistan Taliban Government Restricts Women's Education Further",
+    source: "The Guardian",
+    url: "https://theguardian.com/article8",
+    timestamp: "2025-10-25T11:45:00Z",
+    country: "Afghanistan",
+    region: "South Asia",
+    sentiment_score: -0.9,
+    sentiment_label: "Negative",
+    conflict_intensity: "Low",
+    india_impact: "Medium",
+    india_impact_score: 45,
+    language: "English",
+    tags: ["Human Rights", "Taliban", "Education"],
+    excerpt: "The Taliban administration issued new directives further restricting women's access to higher education and professional training programs.",
+    event_type: "Policy Change",
+    latitude: 34.5553,
+    longitude: 69.2075
+  },
+  {
+    id: 9,
+    title: "Japan and South Korea Agree to Expand Security Cooperation",
+    source: "Japan Times",
+    url: "https://japantimes.com/article9",
+    timestamp: "2025-10-25T09:30:00Z",
+    country: "Japan",
+    region: "East Asia",
+    sentiment_score: 0.7,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "Low",
+    india_impact_score: 30,
+    language: "English",
+    tags: ["Regional Security", "Diplomacy", "Alliance"],
+    excerpt: "Leaders from Japan and South Korea committed to enhanced security cooperation in response to regional threats and economic challenges.",
+    event_type: "Diplomatic Agreement",
+    latitude: 35.6762,
+    longitude: 139.6503
+  },
+  {
+    id: 10,
+    title: "Myanmar Military Junta Extends State of Emergency",
+    source: "Myanmar Now",
+    url: "https://myanmarnow.com/article10",
+    timestamp: "2025-10-25T07:00:00Z",
+    country: "Myanmar",
+    region: "South Asia",
+    sentiment_score: -0.8,
+    sentiment_label: "Negative",
+    conflict_intensity: "High",
+    india_impact: "Medium",
+    india_impact_score: 55,
+    language: "English",
+    tags: ["Military Coup", "Political Crisis", "Human Rights"],
+    excerpt: "Myanmar's military government extended the state of emergency for another six months, delaying promised elections and drawing international criticism.",
+    event_type: "Political Change",
+    latitude: 16.8661,
+    longitude: 96.1951
+  },
+  {
+    id: 11,
+    title: "Saudi Arabia Announces Major Investment in Renewable Energy",
+    source: "Arab News",
+    url: "https://arabnews.com/article11",
+    timestamp: "2025-10-24T20:15:00Z",
+    country: "Saudi Arabia",
+    region: "Middle East",
+    sentiment_score: 0.8,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "Medium",
+    india_impact_score: 50,
+    language: "English",
+    tags: ["Energy", "Economic Development", "Climate"],
+    excerpt: "Saudi Arabia unveiled a $200 billion renewable energy initiative as part of Vision 2030, signaling a major shift in energy strategy.",
+    event_type: "Economic",
+    latitude: 24.7136,
+    longitude: 46.6753
+  },
+  {
+    id: 12,
+    title: "India Launches New Naval Exercise in Indian Ocean",
+    source: "Indian Express",
+    url: "https://indianexpress.com/article12",
+    timestamp: "2025-10-24T16:30:00Z",
+    country: "India",
+    region: "South Asia",
+    sentiment_score: 0.5,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "High",
+    india_impact_score: 80,
+    language: "English",
+    tags: ["Naval Exercise", "Maritime Security", "Defense"],
+    excerpt: "Indian Navy initiated a major maritime exercise involving multiple warships to enhance operational readiness in the Indian Ocean Region.",
+    event_type: "Military Exercise",
+    latitude: -3.3731,
+    longitude: 73.4277
+  },
+  {
+    id: 13,
+    title: "North Korea Test-Fires Ballistic Missile into Sea of Japan",
+    source: "Yonhap News",
+    url: "https://yonhap.com/article13",
+    timestamp: "2025-10-24T12:00:00Z",
+    country: "North Korea",
+    region: "East Asia",
+    sentiment_score: -0.85,
+    sentiment_label: "Negative",
+    conflict_intensity: "High",
+    india_impact: "Low",
+    india_impact_score: 25,
+    language: "English",
+    tags: ["Nuclear Program", "Missile Test", "Regional Security"],
+    excerpt: "North Korea launched an intermediate-range ballistic missile eastward, prompting condemnation from South Korea, Japan, and the United States.",
+    event_type: "Military Action",
+    latitude: 39.0392,
+    longitude: 125.7625
+  },
+  {
+    id: 14,
+    title: "Ethiopia and Eritrea Sign Peace Framework Agreement",
+    source: "African News",
+    url: "https://africannews.com/article14",
+    timestamp: "2025-10-24T09:45:00Z",
+    country: "Ethiopia",
+    region: "Africa",
+    sentiment_score: 0.9,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "Low",
+    india_impact_score: 20,
+    language: "English",
+    tags: ["Peace Agreement", "Regional Stability", "Diplomacy"],
+    excerpt: "Ethiopian and Eritrean leaders signed a comprehensive peace framework ending decades of tension and opening borders for trade and travel.",
+    event_type: "Diplomatic Agreement",
+    latitude: 9.1450,
+    longitude: 40.4897
+  },
+  {
+    id: 15,
+    title: "Kashmir Valley Reports Cross-Border Ceasefire Violations",
+    source: "Kashmir Times",
+    url: "https://kashmirtimes.com/article15",
+    timestamp: "2025-10-24T06:20:00Z",
+    country: "India",
+    region: "South Asia",
+    sentiment_score: -0.7,
+    sentiment_label: "Negative",
+    conflict_intensity: "Medium",
+    india_impact: "High",
+    india_impact_score: 85,
+    language: "English",
+    tags: ["Kashmir", "Cross-Border", "Military"],
+    excerpt: "Indian forces reported multiple ceasefire violations along the Line of Control in Kashmir, with exchanges of fire resulting in no casualties.",
+    event_type: "Border Incident",
+    latitude: 34.0837,
+    longitude: 74.7973
+  },
+  {
+    id: 16,
+    title: "EU Announces Sanctions on Malian Military Leaders",
+    source: "France 24",
+    url: "https://france24.com/article16",
+    timestamp: "2025-10-23T19:30:00Z",
+    country: "Mali",
+    region: "Africa",
+    sentiment_score: -0.6,
+    sentiment_label: "Negative",
+    conflict_intensity: "Medium",
+    india_impact: "Low",
+    india_impact_score: 15,
+    language: "English",
+    tags: ["Sanctions", "Military Coup", "International Relations"],
+    excerpt: "The European Union imposed targeted sanctions on Mali's military junta leaders following delays in democratic transition and human rights concerns.",
+    event_type: "Political Change",
+    latitude: 12.6392,
+    longitude: -8.0029
+  },
+  {
+    id: 17,
+    title: "Venezuela and Colombia Restore Full Diplomatic Relations",
+    source: "El Tiempo",
+    url: "https://eltiempo.com/article17",
+    timestamp: "2025-10-23T15:00:00Z",
+    country: "Venezuela",
+    region: "Americas",
+    sentiment_score: 0.7,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "Low",
+    india_impact_score: 10,
+    language: "English",
+    tags: ["Diplomacy", "Latin America", "Border Relations"],
+    excerpt: "Venezuela and Colombia agreed to fully restore diplomatic ties and reopen their shared border, ending years of strained relations.",
+    event_type: "Diplomatic Agreement",
+    latitude: 10.4806,
+    longitude: -66.9036
+  },
+  {
+    id: 18,
+    title: "Bangladesh Faces Severe Flooding Affecting Millions",
+    source: "Dhaka Tribune",
+    url: "https://dhakatribune.com/article18",
+    timestamp: "2025-10-23T11:30:00Z",
+    country: "Bangladesh",
+    region: "South Asia",
+    sentiment_score: -0.85,
+    sentiment_label: "Negative",
+    conflict_intensity: "Low",
+    india_impact: "Medium",
+    india_impact_score: 60,
+    language: "English",
+    tags: ["Natural Disaster", "Humanitarian Crisis", "Climate"],
+    excerpt: "Severe monsoon flooding in Bangladesh has displaced over 4 million people, with international aid organizations mobilizing emergency response.",
+    event_type: "Natural Disaster",
+    latitude: 23.8103,
+    longitude: 90.4125
+  },
+  {
+    id: 19,
+    title: "Yemen Ceasefire Agreement Shows Signs of Progress",
+    source: "Middle East Eye",
+    url: "https://middleeasteye.com/article19",
+    timestamp: "2025-10-23T08:15:00Z",
+    country: "Yemen",
+    region: "Middle East",
+    sentiment_score: 0.6,
+    sentiment_label: "Positive",
+    conflict_intensity: "Medium",
+    india_impact: "Medium",
+    india_impact_score: 55,
+    language: "English",
+    tags: ["Peace Process", "Yemen War", "Humanitarian"],
+    excerpt: "The UN-brokered ceasefire in Yemen continues to hold for the third consecutive month, raising hopes for a lasting peace settlement.",
+    event_type: "Peace Agreement",
+    latitude: 15.5527,
+    longitude: 48.5164
+  },
+  {
+    id: 20,
+    title: "Australia Strengthens Indo-Pacific Defense Partnerships",
+    source: "Sydney Morning Herald",
+    url: "https://smh.com.au/article20",
+    timestamp: "2025-10-23T04:00:00Z",
+    country: "Australia",
+    region: "East Asia",
+    sentiment_score: 0.7,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "Medium",
+    india_impact_score: 70,
+    language: "English",
+    tags: ["AUKUS", "Defense Partnership", "Indo-Pacific"],
+    excerpt: "Australia announced expanded defense cooperation with regional partners, emphasizing commitment to a free and open Indo-Pacific.",
+    event_type: "Diplomatic Agreement",
+    latitude: -25.2744,
+    longitude: 133.7751
+  }
+];
+
+// Extended articles (continuing to reach 50+)
+const extendedArticles = [
+  {
+    id: 21,
+    title: "Sri Lanka Debt Restructuring Talks Make Breakthrough",
+    source: "Daily Mirror",
+    url: "https://dailymirror.lk/article21",
+    timestamp: "2025-10-22T20:00:00Z",
+    country: "Sri Lanka",
+    region: "South Asia",
+    sentiment_score: 0.5,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "High",
+    india_impact_score: 75,
+    language: "English",
+    tags: ["Economy", "Debt Crisis", "Regional Stability"],
+    excerpt: "Sri Lanka reached a preliminary agreement with international creditors on debt restructuring, offering hope for economic recovery.",
+    event_type: "Economic",
+    latitude: 7.8731,
+    longitude: 80.7718
+  },
+  {
+    id: 22,
+    title: "Turkey Mediates Talks Between Russia and Ukraine",
+    source: "Hurriyet Daily News",
+    url: "https://hurriyetdailynews.com/article22",
+    timestamp: "2025-10-22T16:30:00Z",
+    country: "Turkey",
+    region: "Europe",
+    sentiment_score: 0.4,
+    sentiment_label: "Neutral",
+    conflict_intensity: "Medium",
+    india_impact: "Low",
+    india_impact_score: 30,
+    language: "English",
+    tags: ["Mediation", "Russia-Ukraine", "Diplomacy"],
+    excerpt: "Turkish diplomats facilitated a new round of negotiations between Russian and Ukrainian officials in Istanbul, seeking common ground.",
+    event_type: "Diplomatic Meeting",
+    latitude: 41.0082,
+    longitude: 28.9784
+  },
+  {
+    id: 23,
+    title: "Philippines and US Expand Military Base Access Agreement",
+    source: "Philippine Star",
+    url: "https://philstar.com/article23",
+    timestamp: "2025-10-22T12:45:00Z",
+    country: "Philippines",
+    region: "East Asia",
+    sentiment_score: 0.6,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "Low",
+    india_impact_score: 35,
+    language: "English",
+    tags: ["Military Alliance", "US-Philippines", "South China Sea"],
+    excerpt: "The Philippines granted the United States access to additional military bases under the Enhanced Defense Cooperation Agreement.",
+    event_type: "Diplomatic Agreement",
+    latitude: 12.8797,
+    longitude: 121.7740
+  },
+  {
+    id: 24,
+    title: "Indonesia Hosts ASEAN Summit on Regional Economic Integration",
+    source: "Jakarta Post",
+    url: "https://thejakartapost.com/article24",
+    timestamp: "2025-10-22T09:00:00Z",
+    country: "Indonesia",
+    region: "East Asia",
+    sentiment_score: 0.7,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "Medium",
+    india_impact_score: 55,
+    language: "English",
+    tags: ["ASEAN", "Economic Integration", "Trade"],
+    excerpt: "Leaders from ASEAN nations convened in Jakarta to discuss enhanced economic cooperation and supply chain resilience.",
+    event_type: "Diplomatic Meeting",
+    latitude: -6.2088,
+    longitude: 106.8456
+  },
+  {
+    id: 25,
+    title: "India and Russia Sign New Energy Cooperation Agreement",
+    source: "Moscow Times",
+    url: "https://themoscowtimes.com/article25",
+    timestamp: "2025-10-22T05:30:00Z",
+    country: "Russia",
+    region: "Europe",
+    sentiment_score: 0.6,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "High",
+    india_impact_score: 80,
+    language: "English",
+    tags: ["Energy Security", "Bilateral Relations", "Trade"],
+    excerpt: "India and Russia signed a long-term agreement for oil and gas supplies, strengthening strategic energy partnership.",
+    event_type: "Economic",
+    latitude: 55.7558,
+    longitude: 37.6173
+  },
+  {
+    id: 26,
+    title: "Sudan Humanitarian Crisis Worsens as Fighting Continues",
+    source: "Al Jazeera",
+    url: "https://aljazeera.com/article26",
+    timestamp: "2025-10-21T21:00:00Z",
+    country: "Sudan",
+    region: "Africa",
+    sentiment_score: -0.9,
+    sentiment_label: "Negative",
+    conflict_intensity: "High",
+    india_impact: "Low",
+    india_impact_score: 20,
+    language: "English",
+    tags: ["Civil War", "Humanitarian Crisis", "Refugees"],
+    excerpt: "Ongoing conflict in Sudan has created a severe humanitarian crisis, with millions displaced and international aid access severely limited.",
+    event_type: "Military Action",
+    latitude: 15.5007,
+    longitude: 32.5599
+  },
+  {
+    id: 27,
+    title: "Brazil Hosts Summit on Amazon Rainforest Protection",
+    source: "Folha de S.Paulo",
+    url: "https://folha.uol.com.br/article27",
+    timestamp: "2025-10-21T17:30:00Z",
+    country: "Brazil",
+    region: "Americas",
+    sentiment_score: 0.8,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "Low",
+    india_impact_score: 15,
+    language: "English",
+    tags: ["Climate", "Environment", "International Cooperation"],
+    excerpt: "Eight Amazonian nations gathered in Brazil to establish a unified framework for rainforest conservation and sustainable development.",
+    event_type: "Diplomatic Meeting",
+    latitude: -14.2350,
+    longitude: -51.9253
+  },
+  {
+    id: 28,
+    title: "Maldives Requests Indian Military to Withdraw Presence",
+    source: "Maldives Independent",
+    url: "https://maldivesindependent.com/article28",
+    timestamp: "2025-10-21T13:00:00Z",
+    country: "Maldives",
+    region: "South Asia",
+    sentiment_score: -0.5,
+    sentiment_label: "Negative",
+    conflict_intensity: "Low",
+    india_impact: "High",
+    india_impact_score: 85,
+    language: "English",
+    tags: ["Bilateral Relations", "Defense", "Geopolitics"],
+    excerpt: "The Maldivian government formally requested India to withdraw its military personnel, marking a shift in bilateral defense relations.",
+    event_type: "Political Change",
+    latitude: 3.2028,
+    longitude: 73.2207
+  },
+  {
+    id: 29,
+    title: "South Africa BRICS Summit Focuses on Currency Alternatives",
+    source: "News24",
+    url: "https://news24.com/article29",
+    timestamp: "2025-10-21T09:45:00Z",
+    country: "South Africa",
+    region: "Africa",
+    sentiment_score: 0.5,
+    sentiment_label: "Positive",
+    conflict_intensity: "Low",
+    india_impact: "High",
+    india_impact_score: 75,
+    language: "English",
+    tags: ["BRICS", "Currency", "Economic Policy"],
+    excerpt: "BRICS nations discussed establishing alternative payment systems and reducing dependence on dollar-denominated transactions.",
+    event_type: "Economic",
+    latitude: -30.5595,
+    longitude: 22.9375
+  },
+  {
+    id: 30,
+    title: "Nepal Border Dispute with India Reaches Diplomatic Impasse",
+    source: "Kathmandu Post",
+    url: "https://kathmandupost.com/article30",
+    timestamp: "2025-10-21T06:00:00Z",
+    country: "Nepal",
+    region: "South Asia",
+    sentiment_score: -0.4,
+    sentiment_label: "Neutral",
+    conflict_intensity: "Low",
+    india_impact: "High",
+    india_impact_score: 80,
+    language: "English",
+    tags: ["Border Dispute", "Bilateral Relations", "Territory"],
+    excerpt: "Negotiations between India and Nepal over disputed border areas remain stalled, with both nations maintaining their territorial claims.",
+    event_type: "Diplomatic Meeting",
+    latitude: 27.7172,
+    longitude: 85.3240
+  }
+];
+
+const allArticles = [...sampleArticles, ...extendedArticles];
+
+// This will be replaced with live API data
+let liveArticles = [];
+
+// Assign IR theories to articles based on event characteristics
+function assignTheoriesToArticle(article) {
+  const theories = [];
+  
+  // Realism: Military conflicts, border disputes, power struggles
+  if (article.conflict_intensity === 'High' || article.conflict_intensity === 'Medium' ||
+      article.tags.includes('Military Action') || article.tags.includes('Border Dispute') ||
+      article.tags.includes('Military Exercise')) {
+    theories.push('realism');
+  }
+  
+  // Liberalism: Economic issues, diplomatic agreements, international cooperation
+  if (article.event_type === 'Economic' || article.event_type === 'Diplomatic Agreement' ||
+      article.tags.includes('Trade') || article.tags.includes('Diplomacy') ||
+      article.tags.includes('Peace Agreement')) {
+    theories.push('liberalism');
+  }
+  
+  // Constructivism: Identity, cultural, nationalist themes
+  if (article.tags.includes('Political Crisis') || article.tags.includes('Human Rights') ||
+      article.tags.includes('Bilateral Relations') || article.country === article.region) {
+    theories.push('constructivism');
+  }
+  
+  // Marxism: Economic inequality, resource conflicts
+  if (article.tags.includes('Economy') || article.tags.includes('Economic Crisis') ||
+      article.tags.includes('Sanctions') || article.event_type === 'Economic') {
+    theories.push('marxism');
+  }
+  
+  // Feminism: Humanitarian issues, refugee crises
+  if (article.tags.includes('Humanitarian Crisis') || article.tags.includes('Refugees') ||
+      article.tags.includes('Human Rights')) {
+    theories.push('feminism');
+  }
+  
+  // Postcolonialism: Former colonies, neo-imperialism themes
+  if (['India', 'Pakistan', 'Bangladesh', 'Afghanistan', 'Myanmar', 'Sri Lanka'].includes(article.country) ||
+      article.region === 'Africa' || article.region === 'Middle East') {
+    theories.push('postcolonialism');
+  }
+  
+  return theories.length > 0 ? theories : ['realism']; // Default to realism
+}
+
+// Add theories to all articles
+allArticles.forEach(article => {
+  article.theories = assignTheoriesToArticle(article);
+});
+
+// Check if article qualifies for historical context
+function qualifiesForHistoricalContext(article) {
+  return article.india_impact_score > 70 || 
+         article.conflict_intensity === 'Medium' || 
+         article.conflict_intensity === 'High';
+}
+
+// Find similar historical incidents
+function findSimilarHistoricalIncidents(article) {
+  const matches = [];
+  
+  historicalIncidents.forEach(incident => {
+    let similarity = 0;
+    let matchedFactors = [];
+    
+    // Region match
+    if (incident.region === article.region) {
+      similarity += 20;
+      matchedFactors.push('Same region');
+    }
+    
+    // Actors match
+    if (incident.actors.includes(article.country)) {
+      similarity += 25;
+      matchedFactors.push('Same country involved');
+    }
+    
+    // Sentiment similarity
+    const sentimentDiff = Math.abs(incident.sentiment_avg - article.sentiment_score);
+    if (sentimentDiff < 0.3) {
+      similarity += 15;
+      matchedFactors.push('Similar sentiment');
+    }
+    
+    // Event type patterns
+    if (article.tags.some(tag => incident.similarity_factors.some(factor => 
+        factor.toLowerCase().includes(tag.toLowerCase()) || 
+        tag.toLowerCase().includes(factor.replace('_', ' '))))) {
+      similarity += 20;
+      matchedFactors.push('Similar event patterns');
+    }
+    
+    // Impact score similarity
+    if (Math.abs(incident.india_impact_score - article.india_impact_score) < 20) {
+      similarity += 10;
+      matchedFactors.push('Similar impact level');
+    }
+    
+    // Conflict intensity
+    if ((article.conflict_intensity === 'High' && incident.goldstein_scale < -7) ||
+        (article.conflict_intensity === 'Medium' && incident.goldstein_scale >= -7 && incident.goldstein_scale < -5)) {
+      similarity += 10;
+      matchedFactors.push('Similar intensity');
+    }
+    
+    if (similarity >= 60) {
+      matches.push({
+        incident: incident,
+        similarity: Math.min(similarity, 99),
+        matchedFactors: matchedFactors
+      });
+    }
+  });
+  
+  return matches.sort((a, b) => b.similarity - a.similarity).slice(0, 5);
+}
+
+// Geographic markers
+const geographicMarkers = [
+  {
+    id: "marker1",
+    name: "Eastern Ladakh, India-China Border",
+    latitude: 34.1526,
+    longitude: 77.5770,
+    intensity: "Medium",
+    event_count: 12,
+    sentiment_avg: -0.3,
+    articles: [1, 15, 28]
+  },
+  {
+    id: "marker2",
+    name: "Gaza Strip, Palestine",
+    latitude: 31.5017,
+    longitude: 34.4668,
+    intensity: "High",
+    event_count: 45,
+    sentiment_avg: -0.9,
+    articles: [3, 8, 19, 27]
+  },
+  {
+    id: "marker3",
+    name: "Taiwan Strait",
+    latitude: 25.0375,
+    longitude: 121.5625,
+    intensity: "High",
+    event_count: 38,
+    sentiment_avg: -0.6,
+    articles: [6]
+  },
+  {
+    id: "marker4",
+    name: "Ukraine Eastern Front",
+    latitude: 48.0159,
+    longitude: 37.8028,
+    intensity: "High",
+    event_count: 52,
+    sentiment_avg: -0.8,
+    articles: [5]
+  },
+  {
+    id: "marker5",
+    name: "Kashmir, Line of Control",
+    latitude: 34.0837,
+    longitude: 74.7973,
+    intensity: "Medium",
+    event_count: 18,
+    sentiment_avg: -0.5,
+    articles: [15]
+  },
+  {
+    id: "marker6",
+    name: "Myanmar, Rakhine State",
+    latitude: 20.7881,
+    longitude: 93.7386,
+    intensity: "High",
+    event_count: 25,
+    sentiment_avg: -0.7,
+    articles: [10]
+  },
+  {
+    id: "marker7",
+    name: "Iran Nuclear Facilities",
+    latitude: 35.6892,
+    longitude: 51.3890,
+    intensity: "Medium",
+    event_count: 15,
+    sentiment_avg: -0.4,
+    articles: [7]
+  },
+  {
+    id: "marker8",
+    name: "South China Sea",
+    latitude: 12.8797,
+    longitude: 114.7740,
+    intensity: "Medium",
+    event_count: 22,
+    sentiment_avg: -0.5,
+    articles: [23]
+  }
+];
+
+// Conflict predictions
+const conflictPredictions = [
+  {
+    region: "Taiwan Strait",
+    country: "Taiwan",
+    probability_7d: 35,
+    probability_30d: 52,
+    probability_90d: 68,
+    confidence: 72,
+    risk_factors: ["Military exercises", "Political rhetoric", "Economic tensions"],
+    trend: "increasing"
+  },
+  {
+    region: "Kashmir Region",
+    country: "India",
+    probability_7d: 28,
+    probability_30d: 45,
+    probability_90d: 55,
+    confidence: 68,
+    risk_factors: ["Cross-border incidents", "Militant activity", "Political statements"],
+    trend: "stable"
+  },
+  {
+    region: "Gaza Strip",
+    country: "Palestine",
+    probability_7d: 65,
+    probability_30d: 78,
+    probability_90d: 85,
+    confidence: 85,
+    risk_factors: ["Ongoing hostilities", "Civilian casualties", "Failed negotiations"],
+    trend: "increasing"
+  },
+  {
+    region: "Eastern Ukraine",
+    country: "Ukraine",
+    probability_7d: 55,
+    probability_30d: 68,
+    probability_90d: 75,
+    confidence: 80,
+    risk_factors: ["Active combat", "Territory disputes", "International support"],
+    trend: "stable"
+  },
+  {
+    region: "Korean Peninsula",
+    country: "North Korea",
+    probability_7d: 30,
+    probability_30d: 42,
+    probability_90d: 58,
+    confidence: 65,
+    risk_factors: ["Missile tests", "Military posturing", "Sanctions pressure"],
+    trend: "increasing"
+  },
+  {
+    region: "Myanmar Border Regions",
+    country: "Myanmar",
+    probability_7d: 48,
+    probability_30d: 60,
+    probability_90d: 70,
+    confidence: 70,
+    risk_factors: ["Ethnic conflicts", "Military junta", "Refugee crisis"],
+    trend: "increasing"
+  },
+  {
+    region: "Iran Nuclear Sites",
+    country: "Iran",
+    probability_7d: 25,
+    probability_30d: 38,
+    probability_90d: 50,
+    confidence: 60,
+    risk_factors: ["Nuclear program", "Sanctions", "Regional tensions"],
+    trend: "stable"
+  },
+  {
+    region: "South China Sea",
+    country: "Multiple",
+    probability_7d: 32,
+    probability_30d: 46,
+    probability_90d: 62,
+    confidence: 68,
+    risk_factors: ["Territorial disputes", "Naval presence", "Resource competition"],
+    trend: "stable"
+  }
+];
+
+// Sentiment timeline data
+const sentimentTimeline = {
+  dates: ["2025-09-26", "2025-10-03", "2025-10-10", "2025-10-17", "2025-10-24"],
+  series: {
+    india_china: {
+      name: "India-China Relations",
+      data: [-0.4, -0.3, -0.5, -0.2, -0.3],
+      color: "#2196F3"
+    },
+    middle_east: {
+      name: "Middle East Stability",
+      data: [-0.7, -0.8, -0.9, -0.8, -0.9],
+      color: "#FF6B35"
+    },
+    us_china: {
+      name: "US-China Trade",
+      data: [-0.5, -0.4, -0.6, -0.5, -0.4],
+      color: "#4CAF50"
+    },
+    russia_ukraine: {
+      name: "Russia-Ukraine Conflict",
+      data: [-0.8, -0.8, -0.7, -0.8, -0.8],
+      color: "#FFC107"
+    },
+    south_china_sea: {
+      name: "South China Sea Disputes",
+      data: [-0.4, -0.5, -0.5, -0.6, -0.5],
+      color: "#9C27B0"
+    }
+  }
+};
+
+// India impact categories
+const indiaImpactCategories = {
+  border_security: {
+    threat_level: "Medium",
+    event_count: 8,
+    trend: "stable",
+    score: 65
+  },
+  trade_economy: {
+    threat_level: "Low",
+    event_count: 3,
+    trend: "decreasing",
+    score: 25
+  },
+  regional_stability: {
+    threat_level: "Medium",
+    event_count: 12,
+    trend: "increasing",
+    score: 70
+  },
+  strategic_partnerships: {
+    threat_level: "Low",
+    event_count: 5,
+    trend: "stable",
+    score: 20
+  },
+  energy_security: {
+    threat_level: "Medium",
+    event_count: 6,
+    trend: "increasing",
+    score: 55
+  },
+  diaspora_affairs: {
+    threat_level: "Low",
+    event_count: 2,
+    trend: "stable",
+    score: 15
+  }
+};
+
+// Key metrics
+const keyMetrics = {
+  total_events_24h: 1247,
+  active_conflict_zones: 18,
+  global_sentiment_avg: -0.42,
+  india_relevant_events: 23,
+  trending_topics: ["Taiwan Strait", "Israel-Gaza", "India-China LAC", "Pakistan Economy", "Iran Nuclear Deal"],
+  most_active_regions: [
+    { name: "Middle East", count: 456 },
+    { name: "South Asia", count: 278 },
+    { name: "East Asia", count: 312 },
+    { name: "Europe", count: 145 },
+    { name: "Africa", count: 56 }
+  ]
+};
+
+// Application State
+let state = {
+  currentView: 'global',
+  filteredArticles: [],
+  selectedFilters: {
+    regions: [],
+    sentiment: [],
+    intensity: [],
+    impact: [],
+    timeRange: '7d'
+  },
+  searchQuery: '',
+  bookmarkedArticles: [],
+  selectedPredictionPeriod: '7d'
+};
+
+// Historical Context Functions
+function showHistoricalContext(article) {
+  const modal = document.getElementById('historicalModal');
+  const summary = document.getElementById('currentEventSummary');
+  const matches = document.getElementById('historicalMatches');
+  
+  // Current event summary
+  summary.innerHTML = `
+    <h3>${article.title}</h3>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
+      <div>
+        <strong>Region:</strong> ${article.region}<br>
+        <strong>Country:</strong> ${article.country}
+      </div>
+      <div>
+        <strong>Conflict Intensity:</strong> ${article.conflict_intensity}<br>
+        <strong>India Impact:</strong> ${article.india_impact_score}/100
+      </div>
+      <div>
+        <strong>Sentiment:</strong> ${article.sentiment_label}<br>
+        <strong>Date:</strong> ${new Date(article.timestamp).toLocaleDateString()}
+      </div>
+    </div>
+  `;
+  
+  // Find similar historical incidents
+  const similarIncidents = findSimilarHistoricalIncidents(article);
+  
+  if (similarIncidents.length === 0) {
+    matches.innerHTML = '<p style="color: var(--color-text-secondary);">No closely matching historical incidents found.</p>';
+  } else {
+    matches.innerHTML = similarIncidents.map(match => `
+      <div class="historical-match-card">
+        <div class="match-header">
+          <div>
+            <h4 style="margin-bottom: 8px;">${match.incident.title}</h4>
+            <div style="font-size: 12px; color: var(--color-text-secondary);">${match.incident.date}</div>
+          </div>
+          <div class="similarity-badge">${match.similarity}% Match</div>
+        </div>
+        <div style="margin: 12px 0; padding: 12px; background: var(--color-surface); border-radius: 6px;">
+          <strong>Why this matches:</strong> ${match.matchedFactors.join(', ')}
+        </div>
+        <div class="match-details">
+          <div class="detail-item">
+            <strong>Actors Involved:</strong>
+            ${match.incident.actors.join(', ')}
+          </div>
+          <div class="detail-item">
+            <strong>CAMEO Code:</strong>
+            ${match.incident.cameo_code}
+          </div>
+          <div class="detail-item">
+            <strong>Goldstein Scale:</strong>
+            ${match.incident.goldstein_scale}
+          </div>
+          <div class="detail-item">
+            <strong>Sentiment Average:</strong>
+            ${match.incident.sentiment_avg.toFixed(2)}
+          </div>
+          <div class="detail-item">
+            <strong>Duration:</strong>
+            ${match.incident.duration_days} days
+          </div>
+          <div class="detail-item">
+            <strong>India Impact Score:</strong>
+            ${match.incident.india_impact_score}/100
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-primary);">
+          <strong>Resolution:</strong><br>
+          ${match.incident.resolution}
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: var(--color-surface); border-radius: 6px; border-left: 3px solid var(--color-accent);">
+          <strong>Key Lessons:</strong><br>
+          ${match.incident.key_lessons}
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 6px; border-left: 3px solid #2196F3;">
+          <strong>Relevant IR Theory:</strong> ${match.incident.relevant_theory}<br>
+          <strong>Prediction Insight:</strong><br>
+          ${match.incident.prediction_insight}
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  // Render timeline chart
+  renderEscalationTimeline(similarIncidents);
+  
+  // Render flowchart
+  renderFlowchart();
+  
+  modal.classList.add('show');
+}
+
+function closeHistoricalModal() {
+  document.getElementById('historicalModal').classList.remove('show');
+}
+
+function renderEscalationTimeline(matches) {
+  const ctx = document.getElementById('escalationTimeline');
+  if (!ctx || matches.length === 0) return;
+  
+  // Destroy existing chart if any
+  if (window.escalationChart) {
+    window.escalationChart.destroy();
+  }
+  
+  const labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'];
+  const datasets = matches.slice(0, 3).map((match, index) => {
+    const colors = ['#FF6B35', '#2196F3', '#4CAF50'];
+    return {
+      label: `${match.incident.title.substring(0, 40)}... (Escalation)`,
+      data: match.incident.escalation_curve,
+      borderColor: colors[index],
+      backgroundColor: colors[index] + '30',
+      tension: 0.4,
+      fill: false,
+      borderWidth: 2
+    };
+  });
+  
+  window.escalationChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: '#E3F2FD', font: { size: 11 } }
+        },
+        title: {
+          display: true,
+          text: 'Historical Escalation Patterns',
+          color: '#E3F2FD'
+        }
+      },
+      scales: {
+        y: {
+          min: 0,
+          max: 10,
+          title: { display: true, text: 'Escalation Level', color: '#90CAF9' },
+          ticks: { color: '#90CAF9' },
+          grid: { color: '#1E4976' }
+        },
+        x: {
+          ticks: { color: '#90CAF9' },
+          grid: { color: '#1E4976' }
+        }
+      }
+    }
+  });
+}
+
+function renderFlowchart() {
+  const flowchartSection = document.getElementById('flowchartSection');
+  
+  const steps = [
+    {
+      title: "Event Detection",
+      description: "GDELT database monitors global news for geopolitical events with real-time updates"
+    },
+    {
+      title: "Feature Extraction",
+      description: "Extract key features: region, actors, event type, sentiment, CAMEO codes, intensity"
+    },
+    {
+      title: "Historical Database Query",
+      description: "Search 20+ historical incidents (1962-2022) for pattern matching"
+    },
+    {
+      title: "Similarity Scoring",
+      description: "Multi-factor scoring: region (20%), actors (25%), sentiment (15%), patterns (20%), impact (10%), intensity (10%)"
+    },
+    {
+      title: "Theory Assignment",
+      description: "Apply IR theory frameworks based on event characteristics and context"
+    },
+    {
+      title: "Prediction Generation",
+      description: "Generate insights from historical outcomes, escalation patterns, and resolution strategies"
+    },
+    {
+      title: "Visualization",
+      description: "Display matched incidents with similarity scores, timelines, and actionable lessons"
+    }
+  ];
+  
+  flowchartSection.innerHTML = `
+    <div class="flowchart-steps">
+      ${steps.map((step, index) => `
+        <div class="flowchart-step">
+          <div class="step-number">${index + 1}</div>
+          <div class="step-content">
+            <div class="step-title">${step.title}</div>
+            <div class="step-description">${step.description}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// IR Theory Functions
+function showTheoryModal(theoryKey, article) {
+  const modal = document.getElementById('theoryModal');
+  const title = document.getElementById('theoryModalTitle');
+  const content = document.getElementById('theoryContent');
+  const theory = irTheories[theoryKey];
+  
+  title.textContent = `${theory.name} Analysis`;
+  
+  let articleSpecific = '';
+  if (article) {
+    articleSpecific = `
+      <div class="theory-section" style="border-left-color: ${theory.color};">
+        <h3>Application to Current Event</h3>
+        <p><strong>Event:</strong> ${article.title}</p>
+        <p><strong>${theory.name} Perspective:</strong></p>
+        <p>${generateTheoryApplication(theoryKey, article)}</p>
+      </div>
+    `;
+  }
+  
+  content.innerHTML = `
+    <div class="theory-section" style="border-left-color: ${theory.color};">
+      <h3>Overview</h3>
+      <p>${theory.description}</p>
+    </div>
+    
+    <div class="theory-section" style="border-left-color: ${theory.color};">
+      <h3>Key Concepts</h3>
+      <ul>
+        ${theory.key_concepts.map(concept => `<li>${concept}</li>`).join('')}
+      </ul>
+    </div>
+    
+    <div class="theory-section" style="border-left-color: ${theory.color};">
+      <h3>Application in Analysis</h3>
+      <p>${theory.application}</p>
+    </div>
+    
+    ${articleSpecific}
+    
+    <div class="theory-section" style="border-left-color: ${theory.color};">
+      <h3>Strengths</h3>
+      <p>${theory.strengths}</p>
+    </div>
+    
+    <div class="theory-section" style="border-left-color: ${theory.color};">
+      <h3>Limitations</h3>
+      <p>${theory.weaknesses}</p>
+    </div>
+    
+    <div class="theory-section" style="border-left-color: ${theory.color};">
+      <h3>India Relevance</h3>
+      <p>${generateIndiaRelevance(theoryKey)}</p>
+    </div>
+  `;
+  
+  modal.classList.add('show');
+}
+
+function generateTheoryApplication(theoryKey, article) {
+  const applications = {
+    realism: `This event exemplifies realist principles of power politics and national interest. The ${article.conflict_intensity.toLowerCase()} conflict intensity reflects the security dilemma where states prioritize survival in an anarchic system. India's response (impact score: ${article.india_impact_score}/100) demonstrates calculated pursuit of national interest.`,
+    liberalism: `From a liberal perspective, this event highlights the role of international institutions and economic ties. The ${article.sentiment_label.toLowerCase()} sentiment suggests ${article.sentiment_score > 0 ? 'opportunities for cooperation' : 'challenges to collective security'}. Trade relationships and diplomatic engagement remain key to resolution.`,
+    constructivism: `This incident reveals how ideas and identities shape international politics. National identity, historical narratives about ${article.region}, and domestic political pressure influence state behavior more than pure material interests. Social norms and shared understandings are being contested.`,
+    marxism: `A Marxist analysis reveals economic dimensions: resource competition, class interests, and structural inequalities. The event reflects how ${article.event_type.toLowerCase()} factors and economic dependencies shape interstate relations, beyond simple security calculations.`,
+    feminism: `Feminist IR examines gendered dimensions often invisible in traditional analysis. This event's impact includes refugee flows, civilian casualties, and how masculine conceptions of security and honor drive escalation. Women's voices in peace processes remain marginalized.`,
+    postcolonialism: `Postcolonial analysis highlights legacies of imperialism in current boundaries and conflicts. The ${article.region} context reflects ongoing effects of colonial-era divisions. Power imbalances between Global North and South shape international responses.`
+  };
+  return applications[theoryKey] || 'Application analysis not available.';
+}
+
+function generateIndiaRelevance(theoryKey) {
+  const relevance = {
+    realism: "India's foreign policy traditionally reflects realist thinking: strategic autonomy, military modernization, nuclear deterrence, and balance of power considerations vis-à-vis China and Pakistan. The 1962 defeat and nuclear tests exemplify realist logic.",
+    liberalism: "India's embrace of international institutions (UN, WTO, BRICS), emphasis on democracy promotion in neighborhood, and economic liberalization since 1991 show liberal principles. However, security concerns often override pure liberal cooperation.",
+    constructivism: "Indian foreign policy is deeply shaped by identity as a civilization state, non-aligned movement legacy, and post-colonial pride. Domestic nationalism and historical memory (Partition, 1962) influence current China and Pakistan policies.",
+    marxism: "India's economic rise, class disparities, and North-South positioning affect its foreign policy. Historical anti-imperialism shapes multilateral positions. Development needs drive energy security and resource policies.",
+    feminism: "India faces gender security challenges domestically that affect foreign policy credibility. Women's representation in diplomacy is growing but limited. Refugee and humanitarian crises have gendered dimensions often overlooked.",
+    postcolonialism: "As a former colony, India champions Global South issues and non-interference principles. Border disputes with China and Pakistan reflect colonial-era boundary legacy. India seeks to overcome postcolonial power hierarchies while asserting regional leadership."
+  };
+  return relevance[theoryKey] || 'India relevance analysis not available.';
+}
+
+function closeTheoryModal() {
+  document.getElementById('theoryModal').classList.remove('show');
+}
+
+function openComparisonModal(article) {
+  const modal = document.getElementById('comparisonModal');
+  const checkboxes = document.getElementById('theoryCheckboxes');
+  
+  // Store current article for comparison
+  window.currentComparisonArticle = article;
+  
+  checkboxes.innerHTML = Object.keys(irTheories).map(key => `
+    <label class="checkbox-label">
+      <input type="checkbox" value="${key}" class="theory-comparison-checkbox">
+      <span>${irTheories[key].name}</span>
+    </label>
+  `).join('');
+  
+  document.getElementById('comparisonGrid').innerHTML = '';
+  modal.classList.add('show');
+}
+
+function renderComparison() {
+  const selected = Array.from(document.querySelectorAll('.theory-comparison-checkbox:checked')).map(cb => cb.value);
+  const grid = document.getElementById('comparisonGrid');
+  const article = window.currentComparisonArticle;
+  
+  if (selected.length === 0) {
+    grid.innerHTML = '<p style="color: var(--color-text-secondary); text-align: center; grid-column: 1/-1;">Please select at least one theory to compare.</p>';
+    return;
+  }
+  
+  grid.innerHTML = selected.map(key => {
+    const theory = irTheories[key];
+    return `
+      <div class="comparison-card" style="border-color: ${theory.color};">
+        <h3 style="color: ${theory.color};">${theory.name}</h3>
+        <div style="margin: 16px 0;">
+          <strong>Core Assumption:</strong>
+          <p style="margin-top: 4px; color: var(--color-text-secondary);">${theory.description}</p>
+        </div>
+        <div style="margin: 16px 0;">
+          <strong>Interprets This Event As:</strong>
+          <p style="margin-top: 4px; color: var(--color-text-secondary);">${generateTheoryApplication(key, article)}</p>
+        </div>
+        <div style="margin: 16px 0;">
+          <strong>Predicted Outcome:</strong>
+          <p style="margin-top: 4px; color: var(--color-text-secondary);">${generatePrediction(key, article)}</p>
+        </div>
+        <div style="margin: 16px 0;">
+          <strong>Policy Recommendation:</strong>
+          <p style="margin-top: 4px; color: var(--color-text-secondary);">${generatePolicy(key, article)}</p>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function generatePrediction(theoryKey, article) {
+  const predictions = {
+    realism: `Expects power-based resolution. If India has military advantage, assertive action likely. If balanced, prolonged standoff until one side gains edge or external pressure forces compromise.`,
+    liberalism: `Predicts negotiated settlement through institutions. Economic costs and international mediation will drive parties to bargaining table. Mutual benefits from cooperation will eventually prevail.`,
+    constructivism: `Outcome depends on identity politics and domestic narratives. Leaders need face-saving exits. Long-term resolution requires changing threat perceptions and building trust through social interaction.`,
+    marxism: `Sees economic interests as decisive. Resource access, trade routes, or class pressures will determine resolution. Elite economic interests may override nationalist rhetoric.`,
+    feminism: `Highlights human security costs driving policy change. Civilian casualties, refugee flows, and grassroots peace movements may constrain aggressive policies. Gendered impacts shape public opinion.`,
+    postcolonialism: `Views outcome through power hierarchy lens. Weaker party seeks external support from other postcolonial states. Historical grievances prolong conflict. Western mediation may be rejected as neo-imperial.`
+  };
+  return predictions[theoryKey] || 'Prediction not available.';
+}
+
+function generatePolicy(theoryKey, article) {
+  const policies = {
+    realism: "Strengthen military capabilities, forge strategic alliances, and negotiate from position of strength. Maintain deterrence while seeking favorable power balance.",
+    liberalism: "Engage international institutions, pursue economic ties, and build multilateral coalitions. Use soft power and demonstrate commitment to rules-based order.",
+    constructivism: "Shape narratives, engage in dialogue to change perceptions, and build confidence through symbolic gestures. Address historical grievances and promote people-to-people contact.",
+    marxism: "Address economic inequalities, build South-South solidarity, and challenge structural imbalances. Prioritize economic development over military spending.",
+    feminism: "Center human security, include women in negotiations, and address gendered impacts. Promote demilitarized conceptions of security and grassroots peacebuilding.",
+    postcolonialism: "Assert sovereignty, build coalitions with other postcolonial states, and resist neo-imperial interference. Challenge Western-centric norms while protecting national dignity."
+  };
+  return policies[theoryKey] || 'Policy recommendation not available.';
+}
+
+function closeComparisonModal() {
+  document.getElementById('comparisonModal').classList.remove('show');
+}
+
+// Initialize Application
+async function init() {
+  setupEventListeners();
+  
+  // Show loading state
+  const newsGrid = document.getElementById('newsGrid');
+  if (newsGrid) newsGrid.innerHTML = showLoadingState('Loading data from server...');
+  
+  const predictionsTable = document.getElementById('predictionsTable');
+  if (predictionsTable) predictionsTable.innerHTML = showLoadingState('Loading predictions...');
+  
+  // Check backend health first
+  const isHealthy = await checkBackendHealth();
+  if (!isHealthy) {
+    if (newsGrid) newsGrid.innerHTML = showErrorState('Backend is starting up. Please wait 30-60 seconds and refresh the page.');
+    if (predictionsTable) predictionsTable.innerHTML = showErrorState('Backend is starting up...');
+  }
+  
+  // Load data from API
+  await loadLiveData();
+  
+  // Initialize UI
+  initializeMap();
+  renderMetrics();
+  renderNewsGrid();
+  renderLiveFeed();
+  renderIndiaAnalysis();
+  renderPredictions();
+  renderSentimentChart();
+  updateLastUpdateTime();
+  startAutoRefresh();
+}
+
+// Load live data from API
+async function loadLiveData() {
+  apiData.isLoading = true;
+  
+  try {
+    // Fetch news from multiple regions
+    const regions = ['South Asia', 'Middle East', 'East Asia', 'Europe', 'Africa', 'Americas'];
+    const newsPromises = regions.map(region => fetchNews(region, '7d', 50));
+    const newsResults = await Promise.all(newsPromises);
+    
+    // Flatten and deduplicate
+    const allNews = newsResults.flat();
+    const uniqueNews = Array.from(new Map(allNews.map(item => [item.id || item.title, item])).values());
+    
+    // Fetch predictions
+    const predictions = await fetchPredictions();
+    
+    // Store in global state
+    apiData.news = uniqueNews;
+    apiData.predictions = predictions;
+    apiData.lastFetchTime = new Date();
+    apiData.error = null;
+    
+    // Update liveArticles with API data
+    if (uniqueNews.length > 0) {
+      liveArticles = uniqueNews.map((article, index) => ({
+        id: article.id || index + 1,
+        title: article.title || article.headline || 'Untitled',
+        source: article.source || article.source_name || 'Unknown Source',
+        url: article.url || article.article_url || '#',
+        timestamp: article.timestamp || article.published_date || new Date().toISOString(),
+        country: article.country || article.location || 'Unknown',
+        region: article.region || 'Unknown',
+        sentiment_score: article.sentiment_score || article.sentiment || 0,
+        sentiment_label: article.sentiment_label || getSentimentLabel(article.sentiment_score || 0),
+        conflict_intensity: article.conflict_intensity || article.intensity || 'Low',
+        india_impact: article.india_impact || 'Low',
+        india_impact_score: article.india_impact_score || 30,
+        language: article.language || 'English',
+        tags: article.tags || article.themes || ['News'],
+        excerpt: article.excerpt || article.summary || article.description || 'No description available.',
+        event_type: article.event_type || article.type || 'News Event',
+        latitude: article.latitude || article.lat || 0,
+        longitude: article.longitude || article.lng || article.lon || 0,
+        theories: assignTheoriesToArticle(article)
+      }));
+      
+      state.filteredArticles = [...liveArticles];
+    } else {
+      // Fallback to sample data if API returns nothing
+      liveArticles = [...allArticles];
+      state.filteredArticles = [...allArticles];
+    }
+    
+    // Update predictions if available
+    if (predictions.length > 0) {
+      conflictPredictions.splice(0, conflictPredictions.length, ...predictions.map(pred => ({
+        region: pred.region || pred.location || 'Unknown',
+        country: pred.country || 'Unknown',
+        probability_7d: pred.probability_7d || pred.risk_7d || 25,
+        probability_30d: pred.probability_30d || pred.risk_30d || 35,
+        probability_90d: pred.probability_90d || pred.risk_90d || 45,
+        confidence: pred.confidence || 60,
+        risk_factors: pred.risk_factors || pred.factors || [],
+        trend: pred.trend || 'stable'
+      })));
+    }
+    
+  } catch (error) {
+    console.error('Error loading live data:', error);
+    apiData.error = error.message;
+    // Fallback to sample data
+    liveArticles = [...allArticles];
+    state.filteredArticles = [...allArticles];
+  } finally {
+    apiData.isLoading = false;
+  }
+}
+
+// Helper function to get sentiment label from score
+function getSentimentLabel(score) {
+  if (score > 0.2) return 'Positive';
+  if (score < -0.2) return 'Negative';
+  return 'Neutral';
+}
+
+// Event Listeners
+function setupEventListeners() {
+  // Navigation
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const view = e.target.dataset.view;
+      switchView(view);
+    });
+  });
+
+  // Search
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('input', debounce((e) => {
+    state.searchQuery = e.target.value.toLowerCase();
+    applyFilters();
+  }, 300));
+
+  // Filters
+  document.querySelectorAll('.region-filter, .sentiment-filter, .intensity-filter, .impact-filter').forEach(checkbox => {
+    checkbox.addEventListener('change', handleFilterChange);
+  });
+
+  document.getElementById('timeRange').addEventListener('change', (e) => {
+    state.selectedFilters.timeRange = e.target.value;
+    applyFilters();
+  });
+
+  document.getElementById('clearFilters').addEventListener('click', clearAllFilters);
+
+  // Refresh button
+  document.getElementById('refreshBtn').addEventListener('click', refreshData);
+
+  // Modal
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('articleModal').addEventListener('click', (e) => {
+    if (e.target.id === 'articleModal') closeModal();
+  });
+
+  // View toggle
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      const layout = e.target.dataset.layout;
+      const newsGrid = document.getElementById('newsGrid');
+      if (layout === 'list') {
+        newsGrid.classList.add('list-layout');
+      } else {
+        newsGrid.classList.remove('list-layout');
+      }
+    });
+  });
+
+  // Prediction period toggle
+  document.querySelectorAll('.btn-toggle[data-period]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.btn-toggle[data-period]').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      state.selectedPredictionPeriod = e.target.dataset.period;
+      renderRiskTable();
+    });
+  });
+}
+
+// View Switching
+function switchView(viewName) {
+  state.currentView = viewName;
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.remove('active');
+    if (link.dataset.view === viewName) {
+      link.classList.add('active');
+    }
+  });
+  document.querySelectorAll('.view').forEach(view => {
+    view.classList.remove('active');
+  });
+  document.getElementById(`${viewName}View`).classList.add('active');
+}
+
+// Filter Handling
+function handleFilterChange(e) {
+  const filterType = e.target.classList[0].replace('-filter', '');
+  const value = e.target.value;
+  const filterKey = filterType === 'region' ? 'regions' : filterType === 'sentiment' ? 'sentiment' : filterType === 'intensity' ? 'intensity' : 'impact';
+  
+  if (e.target.checked) {
+    if (!state.selectedFilters[filterKey].includes(value)) {
+      state.selectedFilters[filterKey].push(value);
+    }
+  } else {
+    state.selectedFilters[filterKey] = state.selectedFilters[filterKey].filter(v => v !== value);
+  }
+  
+  applyFilters();
+}
+
+function applyFilters() {
+  let filtered = [...liveArticles];
+  
+  // Search filter
+  if (state.searchQuery) {
+    filtered = filtered.filter(article => 
+      article.title.toLowerCase().includes(state.searchQuery) ||
+      article.excerpt.toLowerCase().includes(state.searchQuery) ||
+      article.country.toLowerCase().includes(state.searchQuery) ||
+      article.tags.some(tag => tag.toLowerCase().includes(state.searchQuery))
+    );
+  }
+  
+  // Region filter
+  if (state.selectedFilters.regions.length > 0) {
+    filtered = filtered.filter(article => state.selectedFilters.regions.includes(article.region));
+  }
+  
+  // Sentiment filter
+  if (state.selectedFilters.sentiment.length > 0) {
+    filtered = filtered.filter(article => state.selectedFilters.sentiment.includes(article.sentiment_label));
+  }
+  
+  // Intensity filter
+  if (state.selectedFilters.intensity.length > 0) {
+    filtered = filtered.filter(article => state.selectedFilters.intensity.includes(article.conflict_intensity));
+  }
+  
+  // Impact filter
+  if (state.selectedFilters.impact.length > 0) {
+    filtered = filtered.filter(article => state.selectedFilters.impact.includes(article.india_impact));
+  }
+  
+  state.filteredArticles = filtered;
+  renderNewsGrid();
+  renderIndiaNewsGrid();
+}
+
+function clearAllFilters() {
+  state.selectedFilters = {
+    regions: [],
+    sentiment: [],
+    intensity: [],
+    impact: [],
+    timeRange: '7d'
+  };
+  state.searchQuery = '';
+  document.getElementById('searchInput').value = '';
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+  document.getElementById('timeRange').value = '7d';
+  applyFilters();
+}
+
+// Render Functions
+function renderMetrics() {
+  const articlesForMetrics = liveArticles.length > 0 ? liveArticles : allArticles;
+  
+  // Calculate metrics from live data
+  const totalEvents = articlesForMetrics.length;
+  const conflictZones = new Set(articlesForMetrics.filter(a => a.conflict_intensity === 'High' || a.conflict_intensity === 'Medium').map(a => a.country)).size;
+  const avgSentiment = articlesForMetrics.reduce((sum, a) => sum + (a.sentiment_score || 0), 0) / articlesForMetrics.length || 0;
+  const indiaEvents = articlesForMetrics.filter(a => a.country === 'India' || a.india_impact === 'High').length;
+  
+  document.getElementById('totalEvents').textContent = totalEvents.toLocaleString();
+  document.getElementById('conflictZones').textContent = conflictZones || keyMetrics.active_conflict_zones;
+  document.getElementById('globalSentiment').textContent = avgSentiment.toFixed(2);
+  document.getElementById('indiaEvents').textContent = indiaEvents || keyMetrics.india_relevant_events;
+}
+
+function renderNewsGrid() {
+  const newsGrid = document.getElementById('newsGrid');
+  newsGrid.innerHTML = '';
+  
+  if (state.filteredArticles.length === 0) {
+    newsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-text-secondary);">No articles match your filters</p>';
+    return;
+  }
+  
+  state.filteredArticles.forEach(article => {
+    const card = createNewsCard(article);
+    newsGrid.appendChild(card);
+  });
+}
+
+function renderIndiaNewsGrid() {
+  const indiaNewsGrid = document.getElementById('indiaNewsGrid');
+  indiaNewsGrid.innerHTML = '';
+  
+  const indiaArticles = state.filteredArticles.filter(a => a.india_impact === 'High' || a.country === 'India');
+  
+  if (indiaArticles.length === 0) {
+    indiaNewsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-text-secondary);">No India-relevant articles</p>';
+    return;
+  }
+  
+  indiaArticles.forEach(article => {
+    const card = createNewsCard(article);
+    indiaNewsGrid.appendChild(card);
+  });
+}
+
+function createNewsCard(article) {
+  const card = document.createElement('div');
+  card.className = 'news-card';
+  card.onclick = () => showArticleModal(article);
+  
+  const sentimentClass = article.sentiment_label.toLowerCase().replace(' ', '-');
+  const intensityClass = article.conflict_intensity.toLowerCase();
+  const impactClass = article.india_impact.toLowerCase();
+  
+  const timeAgo = getTimeAgo(article.timestamp);
+  
+  const showHistoricalBtn = qualifiesForHistoricalContext(article);
+  const theories = article.theories || ['realism'];
+  
+  card.innerHTML = `
+    <h3 class="news-card-title">${article.title}</h3>
+    <div class="news-card-meta">
+      <span class="news-card-source">${article.source}</span>
+      <span>•</span>
+      <span>${timeAgo}</span>
+    </div>
+    <p class="news-card-excerpt">${article.excerpt}</p>
+    <div class="news-card-footer">
+      <span class="badge badge-${sentimentClass}">${article.sentiment_label}</span>
+      <span class="badge badge-${intensityClass}">${article.conflict_intensity}</span>
+      <span class="badge badge-${impactClass}">India: ${article.india_impact}</span>
+    </div>
+    <div class="news-tags" style="margin-top: 8px;">
+      ${article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+    </div>
+    <div class="theory-chips">
+      ${theories.map(theory => `
+        <span class="theory-chip ${theory}" onclick="event.stopPropagation(); showTheoryModal('${theory}', ${JSON.stringify(article).replace(/"/g, '&quot;')})" title="Click to learn about ${irTheories[theory].name}">
+          ${irTheories[theory].name}
+        </span>
+      `).join('')}
+    </div>
+    ${showHistoricalBtn ? `
+      <button class="btn-historical" onclick="event.stopPropagation(); showHistoricalContext(${JSON.stringify(article).replace(/"/g, '&quot;')})">
+        📊 View Historical Context
+      </button>
+      <button class="btn-theory-compare" onclick="event.stopPropagation(); openComparisonModal(${JSON.stringify(article).replace(/"/g, '&quot;')})">
+        🔍 Compare Theories
+      </button>
+    ` : ''}
+  `;
+  
+  return card;
+}
+
+function showArticleModal(article) {
+  const modal = document.getElementById('articleModal');
+  document.getElementById('modalTitle').textContent = article.title;
+  document.getElementById('modalSource').textContent = article.source;
+  document.getElementById('modalTime').textContent = new Date(article.timestamp).toLocaleString();
+  document.getElementById('modalExcerpt').textContent = article.excerpt;
+  document.getElementById('modalRegion').textContent = article.region;
+  document.getElementById('modalCountry').textContent = article.country;
+  document.getElementById('modalEventType').textContent = article.event_type;
+  document.getElementById('modalSentiment').textContent = article.sentiment_label;
+  document.getElementById('modalIntensity').textContent = article.conflict_intensity;
+  document.getElementById('modalImpact').textContent = `${article.india_impact} (${article.india_impact_score}/100)`;
+  
+  const tagsContainer = document.getElementById('modalTags');
+  tagsContainer.innerHTML = article.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+  
+  document.getElementById('readMoreBtn').onclick = () => window.open(article.url, '_blank');
+  document.getElementById('bookmarkBtn').onclick = () => {
+    if (!state.bookmarkedArticles.includes(article.id)) {
+      state.bookmarkedArticles.push(article.id);
+      alert('Article bookmarked!');
+    } else {
+      alert('Article already bookmarked!');
+    }
+  };
+  
+  modal.classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('articleModal').classList.remove('show');
+}
+
+function renderLiveFeed() {
+  const liveFeed = document.getElementById('liveEvents');
+  const liveEvents = [
+    { type: "Military Action", title: "Chinese PLA conducts drills near Taiwan", time: "12 mins ago" },
+    { type: "Diplomatic", title: "India-US joint statement on trade", time: "28 mins ago" },
+    { type: "Economic", title: "Oil prices surge on Middle East tensions", time: "45 mins ago" },
+    { type: "Border Incident", title: "Pakistan shells Indian positions in Kashmir", time: "1 hour ago" },
+    { type: "Political", title: "Myanmar junta extends emergency rule", time: "2 hours ago" },
+    { type: "Military Exercise", title: "US-Japan naval drills in Philippine Sea", time: "3 hours ago" },
+    { type: "Peace Talks", title: "Yemen ceasefire negotiations continue", time: "4 hours ago" },
+    { type: "Sanctions", title: "EU imposes new sanctions on Belarus", time: "5 hours ago" }
+  ];
+  
+  liveFeed.innerHTML = liveEvents.map(event => `
+    <div class="live-event">
+      <div class="live-event-type">${event.type}</div>
+      <div class="live-event-title">${event.title}</div>
+      <div class="live-event-time">${event.time}</div>
+    </div>
+  `).join('');
+}
+
+function renderIndiaAnalysis() {
+  // Calculate overall health score
+  const totalScore = Object.values(indiaImpactCategories).reduce((sum, cat) => sum + cat.score, 0);
+  const avgScore = totalScore / Object.keys(indiaImpactCategories).length;
+  const healthScore = 100 - avgScore;
+  
+  document.getElementById('indiaHealthScore').textContent = Math.round(healthScore);
+  
+  // Update score circle
+  const circumference = 2 * Math.PI * 50;
+  const offset = circumference - (healthScore / 100) * circumference;
+  document.getElementById('scoreCircle').style.strokeDashoffset = offset;
+  
+  // Render categories
+  Object.keys(indiaImpactCategories).forEach(key => {
+    const category = indiaImpactCategories[key];
+    const threatLevel = document.getElementById(`threat-${key}`);
+    if (threatLevel) {
+      threatLevel.textContent = category.threat_level;
+      threatLevel.className = `threat-level ${category.threat_level.toLowerCase()}`;
+    }
+    
+    const count = document.getElementById(`count-${key}`);
+    if (count) count.textContent = category.event_count;
+    
+    const trend = document.getElementById(`trend-${key}`);
+    if (trend) {
+      trend.textContent = category.trend === 'increasing' ? '↑' : category.trend === 'decreasing' ? '↓' : '→';
+    }
+  });
+}
+
+function renderPredictions() {
+  const predictionsTable = document.getElementById('predictionsTable');
+  predictionsTable.innerHTML = conflictPredictions.map(pred => `
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>${pred.region}</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">${pred.country}</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">${pred.probability_30d}%</div>
+        <div class="probability-label">30-day risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: ${pred.confidence}%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: ${pred.confidence}%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          ${pred.risk_factors.map(factor => `<li>${factor}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderRiskTable() {
+  const period = state.selectedPredictionPeriod;
+  const periodKey = `probability_${period}`;
+  const riskTable = document.getElementById('riskTable');
+  
+  const sortedPredictions = [...conflictPredictions].sort((a, b) => b[periodKey] - a[periodKey]);
+  
+  riskTable.innerHTML = sortedPredictions.map(pred => `
+    <div class="prediction-card">
+      <div class="prediction-region">
+        <strong>${pred.region}</strong>
+        <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">${pred.country}</div>
+      </div>
+      <div class="prediction-probability">
+        <div class="probability-value">${pred[periodKey]}%</div>
+        <div class="probability-label">${period} risk</div>
+      </div>
+      <div class="prediction-confidence">
+        <div style="font-size: 12px; margin-bottom: 4px;">Confidence: ${pred.confidence}%</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: ${pred.confidence}%"></div>
+        </div>
+      </div>
+      <div class="prediction-factors">
+        <strong>Risk Factors:</strong>
+        <ul>
+          ${pred.risk_factors.map(factor => `<li>${factor}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSentimentChart() {
+  const ctx = document.getElementById('sentimentChart');
+  if (!ctx) return;
+  
+  const datasets = Object.keys(sentimentTimeline.series).map(key => {
+    const series = sentimentTimeline.series[key];
+    return {
+      label: series.name,
+      data: series.data,
+      borderColor: series.color,
+      backgroundColor: series.color + '20',
+      tension: 0.4,
+      fill: true
+    };
+  });
+  
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: sentimentTimeline.dates,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            color: '#E3F2FD'
+          }
+        },
+        title: {
+          display: true,
+          text: 'Sentiment Trends Over Time',
+          color: '#E3F2FD'
+        }
+      },
+      scales: {
+        y: {
+          min: -1,
+          max: 1,
+          ticks: {
+            color: '#90CAF9'
+          },
+          grid: {
+            color: '#1E4976'
+          }
+        },
+        x: {
+          ticks: {
+            color: '#90CAF9'
+          },
+          grid: {
+            color: '#1E4976'
+          }
+        }
+      }
+    }
+  });
+  
+  // Sentiment distribution
+  const distCtx = document.getElementById('sentimentDistribution');
+  if (!distCtx) return;
+  
+  const articlesForSentiment = liveArticles.length > 0 ? liveArticles : allArticles;
+  const sentimentCounts = {
+    'Positive': articlesForSentiment.filter(a => a.sentiment_label === 'Positive').length,
+    'Neutral': articlesForSentiment.filter(a => a.sentiment_label === 'Neutral').length,
+    'Negative': articlesForSentiment.filter(a => a.sentiment_label === 'Negative').length
+  };
+  
+  new Chart(distCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Positive', 'Neutral', 'Negative'],
+      datasets: [{
+        label: 'Article Count',
+        data: [sentimentCounts.Positive, sentimentCounts.Neutral, sentimentCounts.Negative],
+        backgroundColor: ['#4CAF50', '#9E9E9E', '#F44336']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#90CAF9'
+          },
+          grid: {
+            color: '#1E4976'
+          }
+        },
+        x: {
+          ticks: {
+            color: '#90CAF9'
+          },
+          grid: {
+            color: '#1E4976'
+          }
+        }
+      }
+    }
+  });
+}
+
+function initializeMap() {
+  const map = L.map('map', {
+    center: [20, 0],
+    zoom: 2,
+    minZoom: 2,
+    maxZoom: 8
+  });
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+  
+  // Store map reference globally
+  window.globalMap = map;
+  window.mapMarkers = [];
+  window.historicalHeatmapLayer = null;
+  window.timelineLayersGroup = null;
+  
+  // Add markers for each conflict zone
+  geographicMarkers.forEach(marker => {
+    const color = marker.intensity === 'High' ? '#F44336' : marker.intensity === 'Medium' ? '#FFC107' : '#4CAF50';
+    
+    const circleMarker = L.circleMarker([marker.latitude, marker.longitude], {
+      radius: 10,
+      fillColor: color,
+      color: '#fff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.8
+    }).addTo(map);
+    
+    // Get related articles
+    const relatedArticles = allArticles.filter(a => marker.articles.includes(a.id));
+    
+    let popupContent = `
+      <div style="color: #000; min-width: 280px;">
+        <h4 style="margin: 0 0 8px 0; color: ${color};">${marker.name}</h4>
+        <div style="margin-bottom: 8px;">
+          <strong>Intensity:</strong> <span style="color: ${color};">${marker.intensity}</span><br>
+          <strong>Total Events:</strong> ${marker.event_count}<br>
+          <strong>Avg Sentiment:</strong> ${marker.sentiment_avg.toFixed(2)}
+        </div>
+        <div style="border-top: 1px solid #ddd; padding-top: 8px; margin-top: 8px;">
+          <strong>Recent Events:</strong>
+          <div style="max-height: 150px; overflow-y: auto; margin-top: 8px;">
+    `;
+    
+    const articlesForMap = liveArticles.length > 0 ? liveArticles : allArticles;
+    const relatedArticlesForMap = articlesForMap.filter(a => marker.articles.includes(a.id));
+    relatedArticlesForMap.slice(0, 3).forEach(article => {
+      popupContent += `
+        <div style="margin-bottom: 8px; padding: 6px; background: #f5f5f5; border-radius: 4px; font-size: 12px;">
+          <div style="font-weight: 600; margin-bottom: 4px;">${article.title.substring(0, 60)}...</div>
+          <div style="color: #666;">${article.source} • ${getTimeAgo(article.timestamp)}</div>
+        </div>
+      `;
+    });
+    
+    popupContent += `
+          </div>
+        </div>
+        <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #ddd;">
+          <button onclick="showLocationHistory('${marker.id}')" style="background: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 4px;">
+            📊 View Location History
+          </button>
+          <button onclick="showEscalationAnalysis('${marker.id}')" style="background: #FF6B35; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+            🔥 Escalation Analysis
+          </button>
+        </div>
+      </div>
+    `;
+    
+    circleMarker.bindPopup(popupContent, { maxWidth: 350 });
+    window.mapMarkers.push({ marker: circleMarker, data: marker });
+  });
+}
+
+// Map control functions
+function toggleHistoricalHeatmap() {
+  const checked = document.getElementById('showHistoricalHeatmap').checked;
+  
+  if (checked) {
+    // Simulate historical heatmap with additional semi-transparent circles
+    if (!window.historicalHeatmapLayer) {
+      window.historicalHeatmapLayer = L.layerGroup();
+      
+      // Add historical conflict zones (simulated data)
+      const historicalZones = [
+        { lat: 34.0, lng: 71.5, intensity: 0.7, label: "Soviet-Afghan War (1979-89)" },
+        { lat: 33.3, lng: 44.4, intensity: 0.9, label: "Iraq Wars (1991, 2003)" },
+        { lat: 43.0, lng: 12.5, intensity: 0.6, label: "Yugoslav Wars (1991-95)" },
+        { lat: 15.3, lng: 44.2, intensity: 0.8, label: "Yemen Conflicts (1994-Present)" },
+        { lat: 7.9, lng: 80.7, intensity: 0.7, label: "Sri Lankan Civil War (1983-2009)" },
+        { lat: 31.5, lng: 34.5, intensity: 0.95, label: "Israel-Palestine (1948-Present)" },
+        { lat: 36.2, lng: 37.2, intensity: 0.85, label: "Syrian Civil War (2011-Present)" },
+        { lat: 9.1, lng: 40.5, intensity: 0.6, label: "Ethiopian Conflicts (1974-91, 2020-22)" }
+      ];
+      
+      historicalZones.forEach(zone => {
+        const circle = L.circle([zone.lat, zone.lng], {
+          radius: 150000,
+          fillColor: '#FF6B35',
+          color: '#FF6B35',
+          weight: 1,
+          opacity: 0.3,
+          fillOpacity: zone.intensity * 0.2
+        });
+        circle.bindTooltip(zone.label, { permanent: false });
+        window.historicalHeatmapLayer.addLayer(circle);
+      });
+    }
+    window.historicalHeatmapLayer.addTo(window.globalMap);
+  } else {
+    if (window.historicalHeatmapLayer) {
+      window.globalMap.removeLayer(window.historicalHeatmapLayer);
+    }
+  }
+}
+
+function toggleTimelineLayers() {
+  const checked = document.getElementById('showTimelineLayers').checked;
+  
+  if (checked) {
+    if (!window.timelineLayersGroup) {
+      window.timelineLayersGroup = L.layerGroup();
+      
+      // Add timeline markers for major historical escalations
+      const timelineEvents = [
+        { lat: 34.15, lng: 77.58, year: "2020", event: "Galwan Clash", phase: "escalation" },
+        { lat: 34.08, lng: 74.80, year: "2019", event: "Balakot Strike", phase: "escalation" },
+        { lat: 27.2, lng: 78.0, year: "2017", event: "Doklam Standoff", phase: "tension" },
+        { lat: 24.71, lng: 46.68, year: "2022", event: "Yemen Ceasefire", phase: "deescalation" },
+        { lat: 33.51, lng: 36.29, year: "2023", event: "Syria Normalization", phase: "deescalation" }
+      ];
+      
+      timelineEvents.forEach(evt => {
+        const phaseColor = evt.phase === 'escalation' ? '#F44336' : evt.phase === 'tension' ? '#FFC107' : '#4CAF50';
+        const marker = L.circleMarker([evt.lat, evt.lng], {
+          radius: 6,
+          fillColor: phaseColor,
+          color: '#fff',
+          weight: 1,
+          opacity: 0.8,
+          fillOpacity: 0.6
+        });
+        marker.bindPopup(`
+          <div style="color: #000;">
+            <strong>${evt.year}: ${evt.event}</strong><br>
+            Phase: <span style="color: ${phaseColor}; font-weight: 600;">${evt.phase}</span>
+          </div>
+        `);
+        window.timelineLayersGroup.addLayer(marker);
+      });
+    }
+    window.timelineLayersGroup.addTo(window.globalMap);
+  } else {
+    if (window.timelineLayersGroup) {
+      window.globalMap.removeLayer(window.timelineLayersGroup);
+    }
+  }
+}
+
+function toggleEventClusters() {
+  const checked = document.getElementById('showEventClusters').checked;
+  window.mapMarkers.forEach(m => {
+    if (checked) {
+      m.marker.addTo(window.globalMap);
+    } else {
+      window.globalMap.removeLayer(m.marker);
+    }
+  });
+}
+
+function showLocationHistory(markerId) {
+  const markerData = geographicMarkers.find(m => m.id === markerId);
+  if (!markerData) return;
+  
+  const relatedArticles = allArticles.filter(a => markerData.articles.includes(a.id));
+  if (relatedArticles.length > 0) {
+    showHistoricalContext(relatedArticles[0]);
+  }
+}
+
+function showEscalationAnalysis(markerId) {
+  const markerData = geographicMarkers.find(m => m.id === markerId);
+  if (!markerData) return;
+  
+  alert(`Escalation Analysis for ${markerData.name}\n\nTotal Events: ${markerData.event_count}\nCurrent Intensity: ${markerData.intensity}\nAverage Sentiment: ${markerData.sentiment_avg.toFixed(2)}\n\nThis feature would display detailed escalation timelines and risk predictions.`);
+}
+
+// Utility Functions
+function getTimeAgo(timestamp) {
+  const now = new Date();
+  const past = new Date(timestamp);
+  const diffMs = now - past;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 60) return `${diffMins} mins ago`;
+  if (diffHours < 24) return `${diffHours} hours ago`;
+  return `${diffDays} days ago`;
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function updateLastUpdateTime() {
+  const now = new Date();
+  document.getElementById('lastUpdate').textContent = now.toLocaleString();
+}
+
+async function refreshData() {
+  const btn = document.getElementById('refreshBtn');
+  btn.style.transform = 'rotate(360deg)';
+  btn.style.transition = 'transform 0.5s';
+  
+  // Show loading in news grid
+  const newsGrid = document.getElementById('newsGrid');
+  if (newsGrid) newsGrid.innerHTML = showLoadingState('Refreshing data...');
+  
+  // Reload data from API
+  await loadLiveData();
+  
+  setTimeout(() => {
+    btn.style.transform = 'rotate(0deg)';
+    updateLastUpdateTime();
+    renderNewsGrid();
+    renderIndiaNewsGrid();
+    renderLiveFeed();
+    renderPredictions();
+    renderMetrics();
+  }, 500);
+}
+
+function startAutoRefresh() {
+  let countdown = 900; // 15 minutes
+  setInterval(() => {
+    countdown--;
+    if (countdown <= 0) {
+      countdown = 900;
+      renderLiveFeed();
+    }
+    const mins = Math.floor(countdown / 60);
+    const secs = countdown % 60;
+    document.getElementById('updateTimer').textContent = `Next update: ${mins}:${secs.toString().padStart(2, '0')}`;
+  }, 1000);
+}
+
+// Keyboard navigation for modals
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal();
+    closeHistoricalModal();
+    closeTheoryModal();
+    closeComparisonModal();
+  }
+});
+
+// Add sensitive events banner to dashboard
+function renderSensitiveEventsBanner() {
+  const articlesForBanner = liveArticles.length > 0 ? liveArticles : allArticles;
+  const sensitiveEvents = articlesForBanner.filter(a => qualifiesForHistoricalContext(a))
+    .sort((a, b) => b.india_impact_score - a.india_impact_score)
+    .slice(0, 3);
+  
+  if (sensitiveEvents.length === 0) return;
+  
+  const metricsSection = document.querySelector('.metrics-section');
+  if (!metricsSection) return;
+  
+  const banner = document.createElement('div');
+  banner.style.cssText = `
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(244, 67, 54, 0.15));
+    border: 2px solid var(--color-accent);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+  `;
+  
+  banner.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md);">
+      <h3 style="margin: 0; color: var(--color-accent);">⚠ High-Priority Sensitive Events</h3>
+      <span style="font-size: 12px; color: var(--color-text-secondary);">Requires Historical Analysis</span>
+    </div>
+    <div style="display: grid; gap: var(--space-sm);">
+      ${sensitiveEvents.map(evt => `
+        <div style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md); cursor: pointer; transition: var(--transition);" 
+             onclick="showHistoricalContext(${JSON.stringify(evt).replace(/"/g, '&quot;')})"
+             onmouseover="this.style.transform='translateX(4px)'"
+             onmouseout="this.style.transform='translateX(0)'">
+          <div style="font-weight: 600; margin-bottom: 4px;">${evt.title}</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); display: flex; gap: 12px;">
+            <span>Impact: ${evt.india_impact_score}/100</span>
+            <span>•</span>
+            <span>Intensity: ${evt.conflict_intensity}</span>
+            <span>•</span>
+            <span>${getTimeAgo(evt.timestamp)}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  metricsSection.parentNode.insertBefore(banner, metricsSection);
+}
+
+// Update init function to include banner
+const originalInit = init;
+function init() {
+  setupEventListeners();
+  renderMetrics();
+  renderSensitiveEventsBanner();
+  initializeMap();
+  renderNewsGrid();
+  renderLiveFeed();
+  renderIndiaAnalysis();
+  renderPredictions();
+  renderSentimentChart();
+  updateLastUpdateTime();
+  startAutoRefresh();
+}
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded', init);
